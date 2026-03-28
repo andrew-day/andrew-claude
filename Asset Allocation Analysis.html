@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asset Allocation Analysis — Andrew Day</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --card-border: #2a2d3a;
+    --text: #e4e4e7;
+    --text-muted: #9ca3af;
+    --accent: #6366f1;
+    --green: #22c55e;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --blue: #3b82f6;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 0;
+  }
+  .header {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+    padding: 40px 32px 32px;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  .header .subtitle { color: var(--text-muted); font-size: 15px; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+
+  /* Summary strip */
+  .summary-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .stat-card .label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 6px; }
+  .stat-card .value { font-size: 26px; font-weight: 700; }
+  .stat-card .detail { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .green { color: var(--green); }
+  .red { color: var(--red); }
+  .amber { color: var(--amber); }
+  .blue { color: var(--blue); }
+  .accent { color: var(--accent); }
+
+  /* Sections */
+  .section { margin-bottom: 40px; }
+  .section-title {
+    font-size: 20px; font-weight: 600; margin-bottom: 20px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--card-border);
+  }
+
+  /* Donut row */
+  .donut-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 1fr;
+    gap: 0;
+    align-items: start;
+  }
+  .donut-panel {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+  }
+  .donut-panel h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .donut-panel .panel-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+  .chart-wrap { position: relative; max-width: 300px; margin: 0 auto; }
+  .arrow-col {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 160px;
+    font-size: 32px;
+    color: var(--accent);
+  }
+
+  /* Legend */
+  .legend-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 16px;
+    margin-top: 16px;
+    text-align: left;
+    padding: 0 8px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+  .legend-swatch {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  /* Delta table */
+  .delta-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+  }
+  .delta-table th {
+    text-align: left;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .delta-table td {
+    padding: 12px 14px;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .delta-table tr:hover td { background: rgba(99,102,241,0.06); }
+  .delta-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .bar-cell { width: 160px; }
+  .delta-bar-wrap {
+    height: 20px;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .delta-bar {
+    height: 14px;
+    border-radius: 3px;
+    position: absolute;
+  }
+  .delta-bar.over { background: var(--red); opacity: 0.7; left: 50%; }
+  .delta-bar.under { background: var(--green); opacity: 0.7; right: 50%; }
+  .delta-center { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--text-muted); opacity: 0.3; }
+
+  /* Account cards */
+  .acct-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 16px;
+  }
+  .acct-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .acct-card h4 { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .acct-card .acct-val { font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 12px; }
+  .acct-card .acct-type { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+  .mini-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .mini-bar-label { width: 100px; flex-shrink: 0; color: var(--text-muted); }
+  .mini-bar-track { flex: 1; height: 10px; background: rgba(255,255,255,0.06); border-radius: 5px; overflow: hidden; }
+  .mini-bar-fill { height: 100%; border-radius: 5px; }
+  .mini-bar-pct { width: 44px; text-align: right; font-variant-numeric: tabular-nums; }
+  .acct-note { font-size: 12px; color: var(--text-muted); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--card-border); }
+  .acct-note strong { color: var(--amber); }
+
+  /* Rebalance actions */
+  .action-list { list-style: none; padding: 0; }
+  .action-list li {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .action-num {
+    background: var(--accent);
+    color: white;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .action-text { font-size: 14px; }
+  .action-text strong { color: var(--text); }
+  .action-text span { color: var(--text-muted); }
+
+  .footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 12px;
+    color: var(--text-muted);
+    border-top: 1px solid var(--card-border);
+    margin-top: 40px;
+  }
+
+  @media (max-width: 800px) {
+    .donut-row { grid-template-columns: 1fr; gap: 16px; }
+    .arrow-col { padding-top: 0; transform: rotate(90deg); }
+    .acct-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div style="max-width:1200px;margin:0 auto;">
+    <h1>Asset Allocation Analysis</h1>
+    <div class="subtitle">Andrew Day &nbsp;·&nbsp; All Accounts &nbsp;·&nbsp; March 28, 2026</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Summary strip -->
+  <div class="summary-strip">
+    <div class="stat-card">
+      <div class="label">Total Portfolio</div>
+      <div class="value">$681,717</div>
+      <div class="detail">5 retirement + HSA + checking</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Current Equity</div>
+      <div class="value red">83%</div>
+      <div class="detail">Target: 60%</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Current Bonds</div>
+      <div class="value red">5%</div>
+      <div class="detail">Target: 30%</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Risk Profile Gap</div>
+      <div class="value amber">High</div>
+      <div class="detail">Running 23% too aggressive</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">$ to Rebalance</div>
+      <div class="value accent">~$157K</div>
+      <div class="detail">Equity → Bonds/TIPS</div>
+    </div>
+  </div>
+
+  <!-- Donut comparison -->
+  <div class="section">
+    <div class="section-title">Current vs Moderate Aggressive Target</div>
+    <div class="donut-row">
+      <div class="donut-panel">
+        <h3>Current Allocation</h3>
+        <div class="panel-sub">~83% Equity / 5% Bonds / 12% Cash</div>
+        <div class="chart-wrap"><canvas id="donutCurrent"></canvas></div>
+        <div class="legend-grid" id="legendCurrent"></div>
+      </div>
+      <div class="arrow-col">→</div>
+      <div class="donut-panel">
+        <h3>Moderate Aggressive Target</h3>
+        <div class="panel-sub">60% Equity / 30% Bonds / 10% Cash</div>
+        <div class="chart-wrap"><canvas id="donutTarget"></canvas></div>
+        <div class="legend-grid" id="legendTarget"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delta table -->
+  <div class="section">
+    <div class="section-title">Allocation Gap Detail</div>
+    <div style="background:var(--card);border:1px solid var(--card-border);border-radius:12px;overflow:hidden;">
+      <table class="delta-table">
+        <thead>
+          <tr>
+            <th>Asset Class</th>
+            <th class="num">Current $</th>
+            <th class="num">Current %</th>
+            <th class="num">Target %</th>
+            <th class="num">Delta</th>
+            <th class="bar-cell">Over / Under</th>
+            <th class="num">$ to Move</th>
+          </tr>
+        </thead>
+        <tbody id="deltaBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Account-level view -->
+  <div class="section">
+    <div class="section-title">Account-Level Breakdown</div>
+    <div class="acct-grid" id="acctGrid"></div>
+  </div>
+
+  <!-- Rebalance actions -->
+  <div class="section">
+    <div class="section-title">Recommended Rebalancing Moves</div>
+    <ol class="action-list" id="actionList"></ol>
+  </div>
+
+</div>
+
+<div class="footer">
+  Analysis as of March 28, 2026 &nbsp;·&nbsp; Moderate Aggressive profile for age 53, 10-year horizon &nbsp;·&nbsp; Not financial advice
+</div>
+
+<script>
+// ── DATA ──
+const COLORS = {
+  'US Large Cap':    '#6366f1',
+  'US Small/Mid':    '#8b5cf6',
+  'International':   '#06b6d4',
+  'Bonds':           '#22c55e',
+  'TIPS':            '#10b981',
+  'Target Date':     '#f59e0b',
+  'Cash':            '#94a3b8',
+};
+
+const classes = [
+  { name:'US Large Cap',  current: 355873, currentPct: 52.2, targetPct: 30 },
+  { name:'US Small/Mid',  current: 76370,  currentPct: 11.2, targetPct: 10 },
+  { name:'International', current: 131420, currentPct: 19.3, targetPct: 20 },
+  { name:'Bonds',         current: 32762,  currentPct: 4.8,  targetPct: 25 },
+  { name:'TIPS',          current: 147,    currentPct: 0.0,  targetPct: 5  },
+  { name:'Target Date',   current: 0,      currentPct: 0.0,  targetPct: 0  },
+  { name:'Cash',          current: 85145,  currentPct: 12.5, targetPct: 10 },
+];
+// Note: Target Date fund ($108.5K) has been decomposed into its underlying classes above.
+// TDF breakdown assumed: ~45% US Large, ~10% US Sm/Mid, ~15% Intl, ~25% Bonds, ~5% Cash
+// Those amounts are already folded into the class totals.
+
+const TOTAL = 681717;
+
+// Accounts
+const accounts = [
+  {
+    name: 'Schwab Traditional IRA',
+    value: 326537,
+    type: 'Traditional IRA — Tax-deferred',
+    holdings: [
+      { cls:'US Large Cap', pct:75.7, funds:'SWLGX (46.8%), SWTSX (28.9%)' },
+      { cls:'US Small/Mid', pct:11.9, funds:'SWSSX' },
+      { cls:'International', pct:12.3, funds:'VTIAX' },
+      { cls:'Cash', pct:0.1, funds:'—' },
+    ],
+    note: '<strong>Priority rebalance account.</strong> Sell ~$72K of SWLGX → buy bond index (e.g. SCHZ). No tax impact inside IRA.',
+  },
+  {
+    name: 'Schwab Individual 401k',
+    value: 207904,
+    type: 'Solo 401k — Tax-deferred (Scratch Inc)',
+    holdings: [
+      { cls:'US Large Cap', pct:48.1, funds:'SWTSX (39.3%), SNXFX (8.8%)' },
+      { cls:'US Small/Mid', pct:12.9, funds:'UMBMX (8.8%), ACMVX (4.1%)' },
+      { cls:'International', pct:31.9, funds:'SWISX (26.6%), EISIX (5.3%)' },
+      { cls:'Bonds', pct:2.6, funds:'FTBFX' },
+      { cls:'Cash', pct:4.6, funds:'—' },
+    ],
+    note: '<strong>Second rebalance target.</strong> Sell ~$40K US large cap → buy TIPS index (e.g. SCHP) and aggregate bond.',
+  },
+  {
+    name: 'Fidelity 401k (VSA)',
+    value: 108500,
+    type: 'Traditional 401k — Target Date Fund',
+    holdings: [
+      { cls:'Target Date', pct:100, funds:'FFEZX Freedom 2035' },
+    ],
+    note: 'Auto-rebalances on glide path. Consider rolling to Schwab IRA for more control and lower fees.',
+  },
+  {
+    name: 'Schwab Roth IRA',
+    value: 19527,
+    type: 'Roth IRA — Tax-free growth',
+    holdings: [
+      { cls:'International', pct:99.9, funds:'FSPSX' },
+      { cls:'Cash', pct:0.1, funds:'—' },
+    ],
+    note: 'Keep 100% equity — longest time horizon, tax-free growth. Consider adding US equity for diversification.',
+  },
+  {
+    name: 'Schwab 401k (Old)',
+    value: 1462,
+    type: 'Dormant 401k',
+    holdings: [
+      { cls:'US Large Cap', pct:49.6, funds:'SFLNX, SNXFX' },
+      { cls:'US Small/Mid', pct:10.1, funds:'SFSNX' },
+      { cls:'International', pct:10.0, funds:'SWISX' },
+      { cls:'Bonds', pct:20.2, funds:'VITBMIC' },
+      { cls:'TIPS', pct:10.1, funds:'SWRSX' },
+    ],
+    note: 'Roll into Traditional IRA to consolidate. Too small to manage separately.',
+  },
+  {
+    name: 'Fidelity HSA',
+    value: 2787,
+    type: 'Health Savings Account — Triple tax advantage',
+    holdings: [
+      { cls:'Cash', pct:100, funds:'Uninvested' },
+    ],
+    note: '<strong>Invest this!</strong> HSA is the most tax-advantaged account you own. Move to a total market index fund.',
+  },
+  {
+    name: 'Schwab Checking',
+    value: 15000,
+    type: 'Checking — Emergency reserve',
+    holdings: [
+      { cls:'Cash', pct:100, funds:'—' },
+    ],
+    note: 'Emergency cushion. Target 3 months expenses (~$33K). Currently light but adequate given stable W-2.',
+  },
+];
+
+// ── DONUT CHARTS ──
+const donutLabels = classes.filter(c=>c.name!=='Target Date').map(c=>c.name);
+const donutColors = donutLabels.map(n=>COLORS[n]);
+
+// For the "current" donut, use classes but show TDF as decomposed
+const currentData = classes.filter(c=>c.name!=='Target Date').map(c=>c.currentPct);
+const targetData  = classes.filter(c=>c.name!=='Target Date').map(c=>c.targetPct);
+
+function fmt$(v) { return '$' + Math.round(v).toLocaleString(); }
+
+const donutOpts = (dataArr, labelArr) => ({
+  type: 'doughnut',
+  data: {
+    labels: labelArr,
+    datasets: [{
+      data: dataArr,
+      backgroundColor: donutColors,
+      borderColor: 'rgba(0,0,0,0.3)',
+      borderWidth: 2,
+      hoverBorderColor: '#fff',
+      hoverBorderWidth: 2,
+    }]
+  },
+  options: {
+    responsive: true,
+    cutout: '62%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1a1d27',
+        titleColor: '#e4e4e7',
+        bodyColor: '#9ca3af',
+        borderColor: '#2a2d3a',
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 8,
+        callbacks: {
+          label: function(ctx) {
+            const pct = ctx.parsed.toFixed(1);
+            const dollarVal = Math.round(TOTAL * ctx.parsed / 100);
+            return `${ctx.label}: ${pct}%  (${fmt$(dollarVal)})`;
+          }
+        }
+      }
+    }
+  }
+});
+
+new Chart(document.getElementById('donutCurrent'), donutOpts(currentData, donutLabels));
+new Chart(document.getElementById('donutTarget'), donutOpts(targetData, donutLabels));
+
+// Legends
+function buildLegend(containerId, dataArr) {
+  const el = document.getElementById(containerId);
+  donutLabels.forEach((name, i) => {
+    el.innerHTML += `<div class="legend-item"><div class="legend-swatch" style="background:${donutColors[i]}"></div>${name} <strong>${dataArr[i].toFixed(1)}%</strong></div>`;
+  });
+}
+buildLegend('legendCurrent', currentData);
+buildLegend('legendTarget', targetData);
+
+// ── DELTA TABLE ──
+const tbody = document.getElementById('deltaBody');
+const filtered = classes.filter(c=>c.name!=='Target Date');
+const maxDelta = Math.max(...filtered.map(c=>Math.abs(c.currentPct - c.targetPct)));
+
+filtered.forEach(c => {
+  const delta = c.currentPct - c.targetPct;
+  const dollarMove = Math.round(TOTAL * Math.abs(delta) / 100);
+  const barWidth = (Math.abs(delta) / maxDelta) * 70; // max 70px
+  const isOver = delta > 0.5;
+  const isUnder = delta < -0.5;
+  const barHtml = isOver
+    ? `<div class="delta-bar over" style="width:${barWidth}px"></div>`
+    : isUnder
+    ? `<div class="delta-bar under" style="width:${barWidth}px;right:50%;left:auto;"></div>`
+    : '';
+  const deltaColor = isOver ? 'red' : isUnder ? 'green' : 'text-muted';
+  const sign = delta > 0 ? '+' : '';
+
+  tbody.innerHTML += `<tr>
+    <td><span class="legend-swatch" style="background:${COLORS[c.name]};display:inline-block;vertical-align:middle;margin-right:8px;"></span>${c.name}</td>
+    <td class="num">${fmt$(c.current)}</td>
+    <td class="num">${c.currentPct.toFixed(1)}%</td>
+    <td class="num">${c.targetPct.toFixed(1)}%</td>
+    <td class="num ${deltaColor}">${sign}${delta.toFixed(1)}%</td>
+    <td class="bar-cell"><div class="delta-bar-wrap"><div class="delta-center"></div>${barHtml}</div></td>
+    <td class="num">${isOver || isUnder ? fmt$(dollarMove) : '—'}</td>
+  </tr>`;
+});
+
+// ── ACCOUNT CARDS ──
+const grid = document.getElementById('acctGrid');
+accounts.forEach(a => {
+  let barsHtml = '';
+  a.holdings.forEach(h => {
+    const col = COLORS[h.cls] || '#666';
+    barsHtml += `<div class="mini-bar-row">
+      <div class="mini-bar-label">${h.cls}</div>
+      <div class="mini-bar-track"><div class="mini-bar-fill" style="width:${h.pct}%;background:${col};"></div></div>
+      <div class="mini-bar-pct">${h.pct.toFixed(1)}%</div>
+    </div>`;
+  });
+
+  grid.innerHTML += `<div class="acct-card">
+    <h4>${a.name}</h4>
+    <div class="acct-type">${a.type}</div>
+    <div class="acct-val">${fmt$(a.value)}</div>
+    ${barsHtml}
+    <div class="acct-note">${a.note}</div>
+  </div>`;
+});
+
+// ── REBALANCE ACTIONS ──
+const actions = [
+  { text:'<strong>Schwab Traditional IRA:</strong> <span>Sell ~$72K of SWLGX (US Large Cap Growth) and buy Schwab US Aggregate Bond Index (SCHZ) or similar. This single move fixes half your bond deficit. Zero tax impact inside IRA.</span>' },
+  { text:'<strong>Schwab Individual 401k:</strong> <span>Sell ~$40K across SWTSX/SNXFX and buy TIPS index (SCHP ~$20K) + bond index (SCHZ ~$20K). Also consider trimming the underwater EISIX position (-10.9%).</span>' },
+  { text:'<strong>New Schwab 401k contributions:</strong> <span>Direct 100% of new contributions ($31K/yr) to bond and TIPS funds until overall allocation reaches target. This adds ~$31K/yr of fixed income automatically.</span>' },
+  { text:'<strong>HSA ($2,787):</strong> <span>Invest the full balance in a total stock market index. HSA has triple tax advantage — don\'t leave it in cash.</span>' },
+  { text:'<strong>Old Schwab 401k ($1,462):</strong> <span>Roll into your Traditional IRA. Simplifies your accounts from 5 retirement accounts to 4.</span>' },
+  { text:'<strong>Fidelity 401k ($108.5K):</strong> <span>Leave for now — the 2035 target date fund auto-rebalances. Consider rolling to Schwab IRA after you leave VSA\'s plan fully for more control.</span>' },
+  { text:'<strong>Roth IRA ($19.5K):</strong> <span>Keep 100% equities. This is your longest-horizon, tax-free-growth account. Consider adding a US index alongside FSPSX for geographic diversification.</span>' },
+];
+
+const actionList = document.getElementById('actionList');
+actions.forEach((a, i) => {
+  actionList.innerHTML += `<li><div class="action-num">${i+1}</div><div class="action-text">${a.text}</div></li>`;
+});
+</script>
+
+</body>
+</html>
