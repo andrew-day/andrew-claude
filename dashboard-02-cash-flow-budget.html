@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cash Flow & Budget — Andrew Day</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+  nav { background: #161922; border-bottom: 1px solid #2a2d3a; padding: 12px 24px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  nav a { color: #8b8fa3; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-size: 13px; transition: all 0.2s; }
+  nav a:hover { color: #fff; background: #2a2d3a; }
+  nav a.active { color: #fff; background: #3b82f6; }
+  nav .brand { color: #fff; font-weight: 700; font-size: 15px; margin-right: 16px; }
+  .container { max-width: 1280px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: #8b8fa3; font-size: 14px; margin-bottom: 24px; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .kpi { background: #161922; border: 1px solid #2a2d3a; border-radius: 12px; padding: 20px; }
+  .kpi-label { font-size: 12px; color: #8b8fa3; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .kpi-value { font-size: 26px; font-weight: 700; }
+  .kpi-sub { font-size: 12px; color: #8b8fa3; margin-top: 4px; }
+  .green { color: #22c55e; } .red { color: #ef4444; } .blue { color: #3b82f6; } .amber { color: #f59e0b; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+  @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+  .card { background: #161922; border: 1px solid #2a2d3a; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; color: #8b8fa3; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 12px; border-bottom: 1px solid #2a2d3a; }
+  td { padding: 10px 12px; border-bottom: 1px solid #1e2130; }
+  tr:last-child td { border-bottom: none; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .row-total { font-weight: 700; border-top: 2px solid #2a2d3a; }
+  .bar-bg { background: #1e2130; border-radius: 4px; height: 8px; width: 100%; }
+  .bar-fill { border-radius: 4px; height: 8px; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+  .tag-over { background: rgba(239,68,68,0.15); color: #ef4444; }
+  .tag-under { background: rgba(34,197,94,0.15); color: #22c55e; }
+  .tag-on { background: rgba(59,130,246,0.15); color: #3b82f6; }
+</style>
+</head>
+<body>
+<nav>
+  <span class="brand">Andrew Day — Finances</span>
+  <a href="dashboard-01-financial-overview.html">Overview</a>
+  <a href="dashboard-02-cash-flow-budget.html" class="active">Cash Flow</a>
+  <a href="dashboard-03-debt-payoff.html">Debt Payoff</a>
+  <a href="dashboard-04-retirement-portfolio.html">Retirement</a>
+  <a href="dashboard-05-wealth-roadmap.html">Roadmap</a>
+</nav>
+<div class="container">
+  <h1>Cash Flow & Budget</h1>
+  <p class="subtitle">Based on 2025 actual spending data &amp; current April 2026 income</p>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-label">Monthly Income</div><div class="kpi-value green">$11,975</div><div class="kpi-sub">Take-home + rental</div></div>
+    <div class="kpi"><div class="kpi-label">Monthly Spending</div><div class="kpi-value red">$10,781</div><div class="kpi-sub">Based on 2025 actuals</div></div>
+    <div class="kpi"><div class="kpi-label">Remainder</div><div class="kpi-value amber">$1,194</div><div class="kpi-sub">Before spending cuts</div></div>
+    <div class="kpi"><div class="kpi-label">After Cuts</div><div class="kpi-value green">$2,041</div><div class="kpi-sub">With $847/mo savings</div></div>
+    <div class="kpi"><div class="kpi-label">Annual Bonus</div><div class="kpi-value blue">~$16,500</div><div class="kpi-sub">After tax (~Dec each year)</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Monthly Cash Flow Waterfall</h2>
+    <canvas id="waterfallChart" height="100"></canvas>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>Where the Money Goes (Monthly)</h2>
+      <canvas id="spendingPie"></canvas>
+    </div>
+    <div class="card">
+      <h2>2025 Monthly Spending by Card</h2>
+      <canvas id="monthlyTrend"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Budget vs. Actual (Monthly) — With Proposed Cuts</h2>
+    <table>
+      <thead><tr><th>Category</th><th class="num">2025 Actual</th><th class="num">New Target</th><th class="num">Savings</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Food (dining + grocery + coffee + delivery)</td><td class="num">$1,605</td><td class="num">$1,250</td><td class="num green">$355</td><td><span class="tag tag-over">2.1× budget</span></td></tr>
+        <tr><td>Target</td><td class="num">$511</td><td class="num">$300</td><td class="num green">$211</td><td><span class="tag tag-over">Over</span></td></tr>
+        <tr><td>Phone (Verizon → T-Mobile)</td><td class="num">$374</td><td class="num">$192</td><td class="num green">$182</td><td><span class="tag tag-under">✅ Done</span></td></tr>
+        <tr><td>Starbucks</td><td class="num">$166</td><td class="num">$100</td><td class="num green">$66</td><td><span class="tag tag-over">Card reloads</span></td></tr>
+        <tr><td>Subscriptions</td><td class="num">$219</td><td class="num">$170</td><td class="num green">$49</td><td><span class="tag tag-on">Review later</span></td></tr>
+        <tr><td>Gym (Midtown)</td><td class="num">$305</td><td class="num">$305</td><td class="num">—</td><td><span class="tag tag-on">Keep</span></td></tr>
+        <tr><td>Therapy</td><td class="num">$509</td><td class="num">$509</td><td class="num">—</td><td><span class="tag tag-on">Keep</span></td></tr>
+        <tr><td>Insurance</td><td class="num">$228</td><td class="num">$228</td><td class="num">—</td><td><span class="tag tag-on">Fixed</span></td></tr>
+        <tr><td>Gas & Auto</td><td class="num">$227</td><td class="num">$227</td><td class="num">—</td><td><span class="tag tag-under">Under budget</span></td></tr>
+        <tr class="row-total"><td>Total Identified Savings</td><td></td><td></td><td class="num green">$847/mo</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>3-Year Credit Card Spending Trend</h2>
+    <canvas id="yearlyTrend" height="80"></canvas>
+  </div>
+
+  <div class="card">
+    <h2>Top 10 Spending Categories (2025)</h2>
+    <canvas id="categoriesBar" height="120"></canvas>
+  </div>
+
+</div>
+
+<script>
+const darkGrid = 'rgba(255,255,255,0.06)';
+Chart.defaults.color = '#8b8fa3';
+Chart.defaults.borderColor = darkGrid;
+
+// Waterfall
+new Chart(document.getElementById('waterfallChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Income', 'Housing', 'Semi-Fixed', 'Discretionary', 'Remainder', 'Cuts', 'Available'],
+    datasets: [{
+      data: [11975, -5305, -1862, -3614, 1194, 847, 2041],
+      backgroundColor: ctx => {
+        const v = ctx.raw;
+        const i = ctx.dataIndex;
+        if (i === 6) return '#22c55e';
+        if (i === 5) return '#3b82f6';
+        if (i === 4) return '#f59e0b';
+        return v > 0 ? '#22c55e' : '#ef4444';
+      },
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `$${Math.abs(ctx.raw).toLocaleString()}` } } },
+    scales: {
+      y: { ticks: { callback: v => '$' + (v/1000).toFixed(1) + 'K' }, grid: { color: darkGrid } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// Spending pie
+new Chart(document.getElementById('spendingPie'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Housing Debt', 'Food (all)', 'Therapy+Medical', 'Phone+Internet', 'Target', 'Gym', 'Insurance', 'Subscriptions', 'Gas/Auto', 'All Other'],
+    datasets: [{
+      data: [5305, 1605, 715, 395, 511, 305, 228, 219, 227, 1271],
+      backgroundColor: ['#ef4444','#f59e0b','#ec4899','#8b5cf6','#06b6d4','#22c55e','#6366f1','#14b8a6','#64748b','#334155'],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'right', labels: { boxWidth: 10, padding: 8, font: { size: 11 } } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.label}: $${ctx.raw.toLocaleString()}/mo` } }
+    }
+  }
+});
+
+// Monthly trend by card (2025)
+new Chart(document.getElementById('monthlyTrend'), {
+  type: 'bar',
+  data: {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    datasets: [
+      { label: 'Capital One', data: [2046,1805,2133,1810,1977,3340,3158,2913,1899,2953,2166,3914], backgroundColor: '#3b82f6', borderRadius: 2 },
+      { label: 'Citi AA', data: [1577,3560,2618,3181,3693,2308,3494,3216,2727,3707,3055,1458], backgroundColor: '#8b5cf6', borderRadius: 2 },
+      { label: 'Citi DC', data: [1176,626,742,1070,736,430,672,410,994,786,614,329], backgroundColor: '#06b6d4', borderRadius: 2 }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { boxWidth: 10, font: { size: 11 } } } },
+    scales: {
+      x: { stacked: true, grid: { display: false } },
+      y: { stacked: true, ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'K' }, grid: { color: darkGrid } }
+    }
+  }
+});
+
+// 3-year trend
+new Chart(document.getElementById('yearlyTrend'), {
+  type: 'bar',
+  data: {
+    labels: ['2023', '2024', '2025'],
+    datasets: [
+      { label: 'Capital One', data: [79865, 50526, 32807], backgroundColor: '#3b82f6', borderRadius: 4 },
+      { label: 'Citi AA', data: [0, 1585, 34594], backgroundColor: '#8b5cf6', borderRadius: 4 },
+      { label: 'Citi DoubleCash', data: [10696, 23686, 8585], backgroundColor: '#06b6d4', borderRadius: 4 }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { boxWidth: 10, font: { size: 11 } } } },
+    scales: {
+      x: { stacked: true, grid: { display: false } },
+      y: { stacked: true, ticks: { callback: v => '$' + (v/1000) + 'K' }, grid: { color: darkGrid } }
+    }
+  }
+});
+
+// Top categories
+new Chart(document.getElementById('categoriesBar'), {
+  type: 'bar',
+  data: {
+    labels: ['Restaurants','Target','Therapy','Phone/Internet','Fitness','Groceries','Insurance','Gas/Fuel','Software/Subs','Pharmacy'],
+    datasets: [{
+      data: [12256,6135,6108,4734,3655,2848,2731,2727,2630,2475],
+      backgroundColor: ['#f59e0b','#06b6d4','#ec4899','#8b5cf6','#22c55e','#14b8a6','#6366f1','#64748b','#3b82f6','#ef4444'],
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    indexAxis: 'y',
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` $${ctx.raw.toLocaleString()}/year` } } },
+    scales: {
+      x: { ticks: { callback: v => '$' + (v/1000) + 'K' }, grid: { color: darkGrid } },
+      y: { grid: { display: false } }
+    }
+  }
+});
+</script>
+</body>
+</html>

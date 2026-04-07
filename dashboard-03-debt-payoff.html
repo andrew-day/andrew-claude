@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Debt Payoff Tracker — Andrew Day</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+  nav { background: #161922; border-bottom: 1px solid #2a2d3a; padding: 12px 24px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  nav a { color: #8b8fa3; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-size: 13px; transition: all 0.2s; }
+  nav a:hover { color: #fff; background: #2a2d3a; }
+  nav a.active { color: #fff; background: #3b82f6; }
+  nav .brand { color: #fff; font-weight: 700; font-size: 15px; margin-right: 16px; }
+  .container { max-width: 1280px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: #8b8fa3; font-size: 14px; margin-bottom: 24px; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .kpi { background: #161922; border: 1px solid #2a2d3a; border-radius: 12px; padding: 20px; }
+  .kpi-label { font-size: 12px; color: #8b8fa3; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .kpi-value { font-size: 26px; font-weight: 700; }
+  .kpi-sub { font-size: 12px; color: #8b8fa3; margin-top: 4px; }
+  .green { color: #22c55e; } .red { color: #ef4444; } .blue { color: #3b82f6; } .amber { color: #f59e0b; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+  @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+  .card { background: #161922; border: 1px solid #2a2d3a; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; color: #8b8fa3; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 12px; border-bottom: 1px solid #2a2d3a; }
+  td { padding: 10px 12px; border-bottom: 1px solid #1e2130; }
+  tr:last-child td { border-bottom: none; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .row-total { font-weight: 700; border-top: 2px solid #2a2d3a; }
+  .highlight-row { background: rgba(34,197,94,0.08); }
+  .progress-bar { background: #1e2130; border-radius: 6px; height: 24px; position: relative; overflow: hidden; margin: 8px 0; }
+  .progress-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 11px; font-weight: 600; }
+  .callout { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 16px; margin-top: 16px; font-size: 14px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<nav>
+  <span class="brand">Andrew Day — Finances</span>
+  <a href="dashboard-01-financial-overview.html">Overview</a>
+  <a href="dashboard-02-cash-flow-budget.html">Cash Flow</a>
+  <a href="dashboard-03-debt-payoff.html" class="active">Debt Payoff</a>
+  <a href="dashboard-04-retirement-portfolio.html">Retirement</a>
+  <a href="dashboard-05-wealth-roadmap.html">Roadmap</a>
+</nav>
+<div class="container">
+  <h1>Debt Payoff Tracker</h1>
+  <p class="subtitle">HELOC payoff strategy with bonus acceleration</p>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-label">Total Non-Mortgage Debt</div><div class="kpi-value red">$84,879</div><div class="kpi-sub">HELOC + Renovation loan</div></div>
+    <div class="kpi"><div class="kpi-label">Monthly Debt Service</div><div class="kpi-value amber">$5,305</div><div class="kpi-sub">44% of income</div></div>
+    <div class="kpi"><div class="kpi-label">HELOC Payoff (Recommended)</div><div class="kpi-value green">June 2028</div><div class="kpi-sub">26 months with bonus + $300/mo extra</div></div>
+    <div class="kpi"><div class="kpi-label">Interest Saved</div><div class="kpi-value green">$9,269</div><div class="kpi-sub">vs. minimum payments only</div></div>
+  </div>
+
+  <div class="card">
+    <h2>HELOC Balance Over Time — Scenario Comparison</h2>
+    <canvas id="helocChart" height="100"></canvas>
+  </div>
+
+  <div class="card">
+    <h2>HELOC Payoff Scenarios</h2>
+    <table>
+      <thead><tr><th>Scenario</th><th class="num">Extra/Mo</th><th class="num">Annual Bonus</th><th class="num">Payoff Date</th><th class="num">Total Interest</th><th class="num">Interest Saved</th></tr></thead>
+      <tbody>
+        <tr><td>A. Minimum only</td><td class="num">$0</td><td class="num">$0</td><td class="num">May 2031</td><td class="num red">$16,191</td><td class="num">—</td></tr>
+        <tr><td>B. Bonus only</td><td class="num">$0</td><td class="num">$16,500</td><td class="num">Dec 2028</td><td class="num amber">$7,818</td><td class="num green">$8,374</td></tr>
+        <tr class="highlight-row"><td><strong>C. $300/mo + Bonus (Recommended)</strong></td><td class="num"><strong>$300</strong></td><td class="num"><strong>$16,500</strong></td><td class="num"><strong>June 2028</strong></td><td class="num"><strong>$6,922</strong></td><td class="num green"><strong>$9,269</strong></td></tr>
+        <tr><td>D. $500/mo + Bonus</td><td class="num">$500</td><td class="num">$16,500</td><td class="num">Mar 2028</td><td class="num">$6,497</td><td class="num green">$9,694</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <strong>Why Scenario C?</strong> It pays off the HELOC 2.5 years early, saving $9,269 in interest. It leaves $883/month cushion for irregular expenses. Scenario D saves only $425 more but makes the monthly budget dangerously tight.
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>HELOC Progress</h2>
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>$70,000 remaining</span><span>0% paid</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:0%;background:#ef4444;">Starting</div></div>
+      </div>
+      <table>
+        <thead><tr><th>Milestone</th><th class="num">Balance</th><th class="num">Month</th></tr></thead>
+        <tbody>
+          <tr><td>Start</td><td class="num">$70,000</td><td class="num">Apr 2026</td></tr>
+          <tr><td>First bonus hit</td><td class="num">~$45,000</td><td class="num">Dec 2026</td></tr>
+          <tr><td>Halfway point</td><td class="num">~$35,000</td><td class="num">Mar 2027</td></tr>
+          <tr><td>Second bonus hit</td><td class="num">~$8,000</td><td class="num">Dec 2027</td></tr>
+          <tr class="highlight-row"><td><strong>Paid off!</strong></td><td class="num green"><strong>$0</strong></td><td class="num green"><strong>~June 2028</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2>Renovation Loan</h2>
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>$14,879 remaining</span><span>58% paid</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:58%;background:#22c55e;">58%</div></div>
+      </div>
+      <table>
+        <thead><tr><th>Detail</th><th class="num">Value</th></tr></thead>
+        <tbody>
+          <tr><td>Original balance</td><td class="num">$35,150</td></tr>
+          <tr><td>Remaining</td><td class="num">$14,879</td></tr>
+          <tr><td>Interest rate</td><td class="num">4.99%</td></tr>
+          <tr><td>Monthly payment</td><td class="num">$497.66</td></tr>
+          <tr><td>Matures</td><td class="num">Nov 2028</td></tr>
+          <tr><td>Remaining interest</td><td class="num">~$1,043</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        At 4.99%, this loan costs only $1,043 in remaining interest. <strong>Don't pay it off early</strong> — let it amortize on schedule while focusing extra cash on the 8.5% HELOC.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Total Interest Cost Comparison</h2>
+    <canvas id="interestChart" height="80"></canvas>
+  </div>
+
+  <div class="card">
+    <h2>Post-Payoff Cash Flow Freed (Starting ~Mid-2028)</h2>
+    <table>
+      <thead><tr><th>Source</th><th class="num">Monthly Freed</th><th class="num">Annual Freed</th></tr></thead>
+      <tbody>
+        <tr><td>HELOC payment eliminated</td><td class="num green">+$1,435</td><td class="num green">+$17,220</td></tr>
+        <tr><td>HELOC extra payment eliminated</td><td class="num green">+$300</td><td class="num green">+$3,600</td></tr>
+        <tr><td>Renovation loan (Nov 2028)</td><td class="num green">+$498</td><td class="num green">+$5,976</td></tr>
+        <tr class="row-total"><td>Total freed up</td><td class="num green">+$2,233</td><td class="num green">+$26,796</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+<script>
+const darkGrid = 'rgba(255,255,255,0.06)';
+Chart.defaults.color = '#8b8fa3';
+Chart.defaults.borderColor = darkGrid;
+
+// HELOC amortization scenarios
+function amortize(balance, rate, pmt, extra, bonusMonths, maxM) {
+  const mr = rate/12; const pts = [];
+  for (let m=0; m<=maxM && balance>0; m++) {
+    pts.push({x:m, y: Math.max(0, Math.round(balance))});
+    if (m===maxM) break;
+    const interest = balance * mr;
+    let principal = pmt + extra - interest;
+    if (bonusMonths[m+1]) principal += bonusMonths[m+1];
+    balance = Math.max(0, balance - principal);
+  }
+  return pts;
+}
+const bonus = {8:16500, 20:16500, 32:16500, 44:16500, 56:16500};
+const scenA = amortize(70000, 0.085, 1434.70, 0, {}, 62);
+const scenB = amortize(70000, 0.085, 1434.70, 0, bonus, 62);
+const scenC = amortize(70000, 0.085, 1434.70, 300, bonus, 62);
+const scenD = amortize(70000, 0.085, 1434.70, 500, bonus, 62);
+
+const labels = [];
+const months = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+for (let i=0; i<=62; i++) {
+  const mo = (i + 3) % 12;
+  const yr = 2026 + Math.floor((i+3)/12);
+  labels.push(i % 6 === 0 ? months[mo] + ' ' + (yr%100) : '');
+}
+
+new Chart(document.getElementById('helocChart'), {
+  type: 'line',
+  data: {
+    labels: labels.slice(0, Math.max(scenA.length, 62)),
+    datasets: [
+      { label: 'A: Min only', data: scenA.map(p=>p.y), borderColor: '#ef4444', borderWidth: 2, pointRadius: 0, tension: 0.1, borderDash: [6,3] },
+      { label: 'B: Bonus only', data: scenB.map(p=>p.y), borderColor: '#f59e0b', borderWidth: 2, pointRadius: 0, tension: 0.1, borderDash: [4,2] },
+      { label: 'C: $300+Bonus ★', data: scenC.map(p=>p.y), borderColor: '#22c55e', borderWidth: 3, pointRadius: 0, tension: 0.1 },
+      { label: 'D: $500+Bonus', data: scenD.map(p=>p.y), borderColor: '#3b82f6', borderWidth: 2, pointRadius: 0, tension: 0.1, borderDash: [2,2] },
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { boxWidth: 14, font: { size: 12 } } } },
+    scales: {
+      y: { ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'K' }, grid: { color: darkGrid } },
+      x: { grid: { display: false }, ticks: { maxRotation: 0, font: { size: 10 } } }
+    }
+  }
+});
+
+// Interest comparison
+new Chart(document.getElementById('interestChart'), {
+  type: 'bar',
+  data: {
+    labels: ['A: Minimum Only', 'B: Bonus Only', 'C: $300/mo + Bonus ★', 'D: $500/mo + Bonus'],
+    datasets: [{
+      label: 'Total Interest Paid',
+      data: [16191, 7818, 6922, 6497],
+      backgroundColor: ['#ef4444','#f59e0b','#22c55e','#3b82f6'],
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    indexAxis: 'y',
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` $${ctx.raw.toLocaleString()} total interest` } } },
+    scales: {
+      x: { ticks: { callback: v => '$' + (v/1000) + 'K' }, grid: { color: darkGrid } },
+      y: { grid: { display: false } }
+    }
+  }
+});
+</script>
+</body>
+</html>
