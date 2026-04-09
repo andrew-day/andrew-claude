@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cash Flow & Budget — Andrew Day</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+  nav { background: #161922; border-bottom: 1px solid #2a2d3a; padding: 12px 24px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  nav a { color: #8b8fa3; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-size: 13px; transition: all 0.2s; }
+  nav a:hover { color: #fff; background: #2a2d3a; }
+  nav a.active { color: #fff; background: #3b82f6; }
+  nav .brand { color: #fff; font-weight: 700; font-size: 15px; margin-right: 16px; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: #8b8fa3; font-size: 14px; margin-bottom: 24px; }
+  .section-title { font-size: 20px; font-weight: 700; margin: 32px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #2a2d3a; }
+  .section-desc { color: #8b8fa3; font-size: 13px; margin: -8px 0 16px; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .kpi { background: #161922; border: 1px solid #2a2d3a; border-radius: 12px; padding: 20px; }
+  .kpi-label { font-size: 11px; color: #8b8fa3; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .kpi-value { font-size: 26px; font-weight: 700; }
+  .kpi-sub { font-size: 12px; color: #8b8fa3; margin-top: 4px; }
+  .green { color: #22c55e; } .red { color: #ef4444; } .blue { color: #3b82f6; } .amber { color: #f59e0b; } .purple { color: #a855f7; } .cyan { color: #06b6d4; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+  @media (max-width: 1000px) { .grid-3 { grid-template-columns: 1fr; } }
+  @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+  .card { background: #161922; border: 1px solid #2a2d3a; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+  .card h3 { font-size: 14px; font-weight: 600; margin: 16px 0 8px; color: #8b8fa3; text-transform: uppercase; letter-spacing: 0.5px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: #8b8fa3; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 10px; border-bottom: 1px solid #2a2d3a; }
+  td { padding: 9px 10px; border-bottom: 1px solid #1e2130; }
+  tr:last-child td { border-bottom: none; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .row-total { font-weight: 700; border-top: 2px solid #2a2d3a; }
+  .row-sub { font-weight: 600; background: rgba(59,130,246,0.05); }
+  .tag { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+  .tag-over { background: rgba(239,68,68,0.15); color: #ef4444; }
+  .tag-under { background: rgba(34,197,94,0.15); color: #22c55e; }
+  .tag-on { background: rgba(59,130,246,0.15); color: #3b82f6; }
+  .tag-keep { background: rgba(168,85,247,0.15); color: #a855f7; }
+  .tag-cut { background: rgba(239,68,68,0.15); color: #ef4444; }
+  .tag-done { background: rgba(34,197,94,0.15); color: #22c55e; }
+  .tag-warn { background: rgba(245,158,11,0.15); color: #f59e0b; }
+  .tag-new { background: rgba(6,182,212,0.15); color: #06b6d4; }
+  .bar-bg { background: #1e2130; border-radius: 4px; height: 8px; width: 100%; }
+  .bar-fill { border-radius: 4px; height: 8px; transition: width 0.5s; }
+  .mini-chart { height: 6px; background: #1e2130; border-radius: 3px; margin-top: 4px; overflow: hidden; }
+  .mini-fill { height: 100%; border-radius: 3px; }
+  .callout { background: rgba(245,158,11,0.08); border-left: 3px solid #f59e0b; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 13px; }
+  .callout-green { background: rgba(34,197,94,0.08); border-left-color: #22c55e; }
+  .tab-bar { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #2a2d3a; padding-bottom: 8px; }
+  .tab { padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; color: #8b8fa3; background: transparent; border: none; transition: all 0.2s; }
+  .tab:hover { color: #fff; background: #2a2d3a; }
+  .tab.active { color: #fff; background: #3b82f6; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .debt-bar { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+  .debt-bar-label { width: 140px; font-size: 12px; flex-shrink: 0; }
+  .debt-bar-track { flex: 1; height: 20px; background: #1e2130; border-radius: 4px; overflow: hidden; position: relative; }
+  .debt-bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 11px; font-weight: 600; }
+  .debt-bar-val { width: 80px; text-align: right; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<nav>
+  <span class="brand">Andrew Day — Finances</span>
+  <a href="dashboard-01-financial-overview.html">Overview</a>
+  <a href="dashboard-02-cash-flow-budget.html" class="active">Cash Flow & Budget</a>
+  <a href="dashboard-03-debt-payoff.html">Debt Payoff</a>
+  <a href="dashboard-04-retirement-portfolio.html">Retirement</a>
+  <a href="dashboard-05-wealth-roadmap.html">Roadmap</a>
+</nav>
+<div class="container">
+  <h1>Budget & Spending Guide</h1>
+  <p class="subtitle">Comprehensive monthly budget, subscription scorecard, and debt vs. income analysis — based on 130+ statements across 2023–2025</p>
+
+  <!-- ================= SECTION 1: INCOME vs OUTFLOW ================= -->
+  <div class="section-title">1. Income vs. Outflow — Where Every Dollar Goes</div>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-label">Monthly Income</div><div class="kpi-value green">$11,975</div><div class="kpi-sub">$7,800 take-home + $4,175 rent</div></div>
+    <div class="kpi"><div class="kpi-label">Fixed Obligations</div><div class="kpi-value red">$5,305</div><div class="kpi-sub">Mortgage + HELOC + Reno loan</div></div>
+    <div class="kpi"><div class="kpi-label">Recurring Charges</div><div class="kpi-value amber">$1,770</div><div class="kpi-sub">Utilities + subs + insurance + health</div></div>
+    <div class="kpi"><div class="kpi-label">Discretionary</div><div class="kpi-value purple">$3,614</div><div class="kpi-sub">Food, shopping, travel, etc.</div></div>
+    <div class="kpi"><div class="kpi-label">Remainder</div><div class="kpi-value cyan">$1,286</div><div class="kpi-sub">Before any spending cuts</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>Monthly Dollar Flow</h2>
+      <canvas id="waterfall"></canvas>
+    </div>
+    <div class="card">
+      <h2>Spending Breakdown (% of Income)</h2>
+      <canvas id="incomePie"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Full Monthly Ledger — Every Dollar Accounted For</h2>
+    <table>
+      <thead><tr><th>Line Item</th><th class="num">Monthly</th><th class="num">Annual</th><th class="num">% Income</th><th>Type</th></tr></thead>
+      <tbody>
+        <tr class="row-sub"><td><strong>INCOME</strong></td><td class="num green"><strong>$11,975</strong></td><td class="num green"><strong>$143,700</strong></td><td class="num">100%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;Schwab take-home pay</td><td class="num">$7,800</td><td class="num">$93,600</td><td class="num">65.1%</td><td><span class="tag tag-on">W-2</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Rental income (2 units)</td><td class="num">$4,175</td><td class="num">$50,100</td><td class="num">34.9%</td><td><span class="tag tag-on">Rental</span></td></tr>
+
+        <tr class="row-sub"><td><strong>FIXED DEBT SERVICE</strong></td><td class="num red"><strong>($5,305)</strong></td><td class="num red"><strong>($63,660)</strong></td><td class="num">44.3%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;Chase mortgage (3.25%)</td><td class="num">$3,372</td><td class="num">$40,464</td><td class="num">28.2%</td><td><span class="tag tag-keep">Permanent</span></td></tr>
+        <tr><td>&nbsp;&nbsp;HELOC (8.5%)</td><td class="num">$1,435</td><td class="num">$17,220</td><td class="num">12.0%</td><td><span class="tag tag-cut">Payoff mid-2028</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Renovation loan (4.99%)</td><td class="num">$498</td><td class="num">$5,976</td><td class="num">4.2%</td><td><span class="tag tag-cut">Payoff Nov 2028</span></td></tr>
+
+        <tr class="row-sub"><td><strong>UTILITIES (Bank ACH)</strong></td><td class="num red"><strong>($323)</strong></td><td class="num red"><strong>($3,876)</strong></td><td class="num">2.7%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;ComEd (electric)</td><td class="num">$118</td><td class="num">$1,416</td><td class="num">1.0%</td><td><span class="tag tag-warn">Seasonal</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Peoples Gas (heating)</td><td class="num">$130</td><td class="num">$1,560</td><td class="num">1.1%</td><td><span class="tag tag-warn">$46–284/mo</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Chicago Water</td><td class="num">$75</td><td class="num">$900</td><td class="num">0.6%</td><td><span class="tag tag-on">Quarterly</span></td></tr>
+
+        <tr class="row-sub"><td><strong>ESSENTIAL SERVICES</strong></td><td class="num red"><strong>($569)</strong></td><td class="num red"><strong>($6,818)</strong></td><td class="num">4.8%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;T-Mobile phone</td><td class="num">$192</td><td class="num">$2,304</td><td class="num">1.6%</td><td><span class="tag tag-done">Was $374</span></td></tr>
+        <tr><td>&nbsp;&nbsp;AmFam property insurance</td><td class="num">$228</td><td class="num">$2,731</td><td class="num">1.9%</td><td><span class="tag tag-on">Fixed</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Comcast internet</td><td class="num">$107</td><td class="num">$1,284</td><td class="num">0.9%</td><td><span class="tag tag-warn">+75% in 3yr</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Google Workspace</td><td class="num">$22</td><td class="num">$259</td><td class="num">0.2%</td><td><span class="tag tag-on">Business</span></td></tr>
+        <tr><td>&nbsp;&nbsp;AmFam life insurance</td><td class="num">$20</td><td class="num">$240</td><td class="num">0.2%</td><td><span class="tag tag-on">Bank ACH</span></td></tr>
+
+        <tr class="row-sub"><td><strong>HEALTH & WELLNESS</strong></td><td class="num red"><strong>($621)</strong></td><td class="num red"><strong>($7,454)</strong></td><td class="num">5.2%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;Midtown gym</td><td class="num">$302</td><td class="num">$3,626</td><td class="num">2.5%</td><td><span class="tag tag-keep">Health priority</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Chicago CBT (therapy)</td><td class="num">$199</td><td class="num">$2,388</td><td class="num">1.7%</td><td><span class="tag tag-keep">~10 sessions/yr</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Handle w/ Care (therapy)</td><td class="num">$120</td><td class="num">$1,440</td><td class="num">1.0%</td><td><span class="tag tag-keep">~8 sessions/yr</span></td></tr>
+
+        <tr class="row-sub"><td><strong>PROFESSIONAL TOOLS</strong></td><td class="num red"><strong>($93)</strong></td><td class="num red"><strong>($1,110)</strong></td><td class="num">0.8%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;Webflow</td><td class="num">$47</td><td class="num">$567</td><td class="num">0.4%</td><td><span class="tag tag-keep">Website</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Figma</td><td class="num">$35</td><td class="num">$416</td><td class="num">0.3%</td><td><span class="tag tag-keep">Design tool</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Adobe Lightroom</td><td class="num">$11</td><td class="num">$127</td><td class="num">0.1%</td><td><span class="tag tag-on">Photography</span></td></tr>
+
+        <tr class="row-sub"><td><strong>STREAMING & ENTERTAINMENT</strong></td><td class="num red"><strong>($119)</strong></td><td class="num red"><strong>($1,651)</strong></td><td class="num">1.2%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;Netflix (Premium)</td><td class="num">$28</td><td class="num">$331</td><td class="num">0.2%</td><td><span class="tag tag-warn">+26% in 3yr</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Spotify (Family)</td><td class="num">$22</td><td class="num">$264</td><td class="num">0.2%</td><td><span class="tag tag-warn">+102% in 3yr</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Hulu (ad-free)</td><td class="num">$21</td><td class="num">$251</td><td class="num">0.2%</td><td><span class="tag tag-new">Added 2024</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Max / HBO</td><td class="num">$19</td><td class="num">$225</td><td class="num">0.2%</td><td><span class="tag tag-new">Added 2025</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Apple (iCloud+TV++Hinge)</td><td class="num">$15</td><td class="num">$400</td><td class="num">0.3%</td><td><span class="tag tag-on">Bundle</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Libro.fm (audiobooks)</td><td class="num">$15</td><td class="num">$180</td><td class="num">0.1%</td><td><span class="tag tag-new">Replaced Audible</span></td></tr>
+
+        <tr class="row-sub"><td><strong>TRANSPORTATION (Recurring)</strong></td><td class="num red"><strong>($34)</strong></td><td class="num red"><strong>($433)</strong></td><td class="num">0.3%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;IL Tollway (E-ZPass)</td><td class="num">$20</td><td class="num">$240</td><td class="num">0.2%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;SpotHero (parking)</td><td class="num">$14</td><td class="num">$193</td><td class="num">0.1%</td><td></td></tr>
+
+        <tr class="row-sub"><td><strong>DISCRETIONARY SPENDING</strong></td><td class="num red"><strong>($3,614)</strong></td><td class="num red"><strong>($43,368)</strong></td><td class="num">30.2%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;Restaurants & dining</td><td class="num">$1,021</td><td class="num">$12,256</td><td class="num">8.5%</td><td><span class="tag tag-over">Biggest line</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Target (mostly groceries)</td><td class="num">$511</td><td class="num">$6,135</td><td class="num">4.3%</td><td><span class="tag tag-warn">$186/visit</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Other groceries</td><td class="num">$237</td><td class="num">$2,848</td><td class="num">2.0%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;Gas & fuel</td><td class="num">$227</td><td class="num">$2,727</td><td class="num">1.9%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;Amazon & online</td><td class="num">$204</td><td class="num">$2,449</td><td class="num">1.7%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;Home & hardware</td><td class="num">$184</td><td class="num">$2,208</td><td class="num">1.5%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;Outdoor & sports</td><td class="num">$180</td><td class="num">$2,165</td><td class="num">1.5%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;Coffee (Starbucks+Colectivo)</td><td class="num">$178</td><td class="num">$2,135</td><td class="num">1.5%</td><td><span class="tag tag-warn">Card reloads</span></td></tr>
+        <tr><td>&nbsp;&nbsp;Food delivery (Grubhub)</td><td class="num">$169</td><td class="num">$2,024</td><td class="num">1.4%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;Travel & hotels</td><td class="num">$156</td><td class="num">$1,866</td><td class="num">1.3%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;Pharmacy & medical</td><td class="num">$206</td><td class="num">$2,475</td><td class="num">1.7%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;Kids & family</td><td class="num">$104</td><td class="num">$1,247</td><td class="num">0.9%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;Pet care</td><td class="num">$94</td><td class="num">$1,122</td><td class="num">0.8%</td><td></td></tr>
+        <tr><td>&nbsp;&nbsp;Other / misc</td><td class="num">$143</td><td class="num">$1,711</td><td class="num">1.2%</td><td></td></tr>
+
+        <tr class="row-total"><td><strong>REMAINDER</strong></td><td class="num cyan"><strong>$1,286</strong></td><td class="num cyan"><strong>$15,330</strong></td><td class="num"><strong>10.7%</strong></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="callout" style="margin-top:16px">
+      <strong>Key insight:</strong> 44.3% of income goes to housing debt alone. After the HELOC ($1,435/mo) and renovation loan ($498/mo) are paid off in mid-2028, that drops to 28.2% — freeing up $1,933/month.
+    </div>
+  </div>
+
+  <!-- ================= SECTION 2: CATEGORY BUDGET ================= -->
+  <div class="section-title">2. Category-by-Category Budget — 3-Year Trend + 2026 Targets</div>
+
+  <div class="card">
+    <h2>Spending Trends: 2023 → 2024 → 2025 → 2026 Target</h2>
+    <canvas id="categoryTrend" height="110"></canvas>
+  </div>
+
+  <div class="card">
+    <h2>Proposed 2026 Monthly Budget vs. 2025 Actuals</h2>
+    <table>
+      <thead><tr><th>Category</th><th class="num">2023</th><th class="num">2024</th><th class="num">2025</th><th>Trend</th><th class="num">2026 Target</th><th class="num">Savings</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Restaurants & dining</td><td class="num">$1,347</td><td class="num">$1,126</td><td class="num">$1,021</td><td><span class="tag tag-under">↓ 24%</span></td><td class="num">$700</td><td class="num green">$321</td><td><span class="tag tag-over">8.5% of income</span></td></tr>
+        <tr><td>Target (groceries)</td><td class="num">—</td><td class="num">—</td><td class="num">$511</td><td><span class="tag tag-on">—</span></td><td class="num">$300</td><td class="num green">$211</td><td><span class="tag tag-warn">$186/visit</span></td></tr>
+        <tr><td>Phone (Verizon→T-Mobile)</td><td class="num">$350</td><td class="num">$374</td><td class="num">$374</td><td><span class="tag tag-over">↑ 7%</span></td><td class="num">$192</td><td class="num green">$182</td><td><span class="tag tag-done">✅ Done</span></td></tr>
+        <tr><td>Comcast internet</td><td class="num">$60</td><td class="num">$88</td><td class="num">$107</td><td><span class="tag tag-over">↑ 75%</span></td><td class="num">$80</td><td class="num green">$27</td><td><span class="tag tag-warn">Renegotiate</span></td></tr>
+        <tr><td>Coffee & cafes</td><td class="num">—</td><td class="num">—</td><td class="num">$178</td><td><span class="tag tag-on">—</span></td><td class="num">$100</td><td class="num green">$78</td><td><span class="tag tag-over">Starbucks reloads</span></td></tr>
+        <tr><td>Food delivery</td><td class="num">—</td><td class="num">—</td><td class="num">$169</td><td><span class="tag tag-on">—</span></td><td class="num">$100</td><td class="num green">$69</td><td><span class="tag tag-warn">1.5x/wk max</span></td></tr>
+        <tr><td>Streaming (all)</td><td class="num">$48</td><td class="num">$85</td><td class="num">$119</td><td><span class="tag tag-over">↑ 148%</span></td><td class="num">$95</td><td class="num green">$24</td><td><span class="tag tag-warn">Downgrade tiers</span></td></tr>
+        <tr><td>Gym (Midtown)</td><td class="num">—</td><td class="num">—</td><td class="num">$302</td><td><span class="tag tag-on">—</span></td><td class="num">$302</td><td class="num">—</td><td><span class="tag tag-keep">Keep</span></td></tr>
+        <tr><td>Therapy</td><td class="num">—</td><td class="num">—</td><td class="num">$509</td><td><span class="tag tag-on">—</span></td><td class="num">$509</td><td class="num">—</td><td><span class="tag tag-keep">Keep</span></td></tr>
+        <tr><td>Insurance</td><td class="num">$228</td><td class="num">$228</td><td class="num">$248</td><td><span class="tag tag-on">Stable</span></td><td class="num">$248</td><td class="num">—</td><td><span class="tag tag-on">Fixed</span></td></tr>
+        <tr><td>Gas & auto</td><td class="num">$465</td><td class="num">$315</td><td class="num">$227</td><td><span class="tag tag-under">↓ 51%</span></td><td class="num">$227</td><td class="num">—</td><td><span class="tag tag-under">Under budget</span></td></tr>
+        <tr class="row-total"><td><strong>Total monthly savings available</strong></td><td></td><td></td><td></td><td></td><td></td><td class="num green"><strong>$912</strong></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="callout-green callout">
+      <strong>$912/mo in identified cuts</strong> → combined with existing $1,286 remainder = <strong>$2,198/mo available</strong> for debt payoff, 529, emergency fund, and cushion.
+    </div>
+  </div>
+
+  <!-- ================= SECTION 3: SUBSCRIPTION SCORECARD ================= -->
+  <div class="section-title">3. Subscription Scorecard</div>
+  <p class="section-desc">Every active subscription ranked by annual cost, with 3-year price inflation and priority tags.</p>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>Subscription Cost by Category</h2>
+      <canvas id="subPie"></canvas>
+    </div>
+    <div class="card">
+      <h2>3-Year Streaming Price Inflation</h2>
+      <canvas id="inflationBar"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Full Subscription Scorecard</h2>
+    <table>
+      <thead><tr><th>Service</th><th class="num">Monthly</th><th class="num">Annual</th><th class="num">2023 Price</th><th class="num">3yr Change</th><th>Priority</th><th>% Take-Home</th></tr></thead>
+      <tbody>
+        <tr><td>Midtown Chicago (gym)</td><td class="num">$302</td><td class="num">$3,626</td><td class="num">—</td><td class="num">—</td><td><span class="tag tag-keep">Must-Have</span></td><td class="num">2.5%</td></tr>
+        <tr><td>AmFam property insurance</td><td class="num">$228</td><td class="num">$2,731</td><td class="num">$228</td><td class="num">0%</td><td><span class="tag tag-keep">Must-Have</span></td><td class="num">1.9%</td></tr>
+        <tr><td>Chicago CBT (therapy)</td><td class="num">$199</td><td class="num">$2,388</td><td class="num">—</td><td class="num">—</td><td><span class="tag tag-keep">Must-Have</span></td><td class="num">1.7%</td></tr>
+        <tr><td>T-Mobile phone</td><td class="num">$192</td><td class="num">$2,304</td><td class="num">$374</td><td class="num green">-49%</td><td><span class="tag tag-keep">Must-Have</span></td><td class="num">1.6%</td></tr>
+        <tr><td>Handle w/ Care (therapy)</td><td class="num">$120</td><td class="num">$1,440</td><td class="num">—</td><td class="num">—</td><td><span class="tag tag-keep">Must-Have</span></td><td class="num">1.0%</td></tr>
+        <tr><td>ComEd (electric)</td><td class="num">$118</td><td class="num">$1,416</td><td class="num">$135</td><td class="num green">-13%</td><td><span class="tag tag-keep">Must-Have</span></td><td class="num">1.0%</td></tr>
+        <tr><td>Peoples Gas (heating)</td><td class="num">$130</td><td class="num">$1,560</td><td class="num">$260</td><td class="num green">-50%</td><td><span class="tag tag-keep">Must-Have</span></td><td class="num">1.1%</td></tr>
+        <tr><td>Comcast internet</td><td class="num">$107</td><td class="num">$1,284</td><td class="num">$60</td><td class="num red">+75%</td><td><span class="tag tag-warn">Renegotiate</span></td><td class="num">0.9%</td></tr>
+        <tr><td>Chicago Water</td><td class="num">$75</td><td class="num">$900</td><td class="num">$75</td><td class="num">0%</td><td><span class="tag tag-keep">Must-Have</span></td><td class="num">0.6%</td></tr>
+        <tr><td>Webflow</td><td class="num">$47</td><td class="num">$567</td><td class="num">—</td><td class="num">—</td><td><span class="tag tag-on">Nice-to-Have</span></td><td class="num">0.4%</td></tr>
+        <tr><td>Figma</td><td class="num">$35</td><td class="num">$416</td><td class="num">—</td><td class="num">—</td><td><span class="tag tag-on">Nice-to-Have</span></td><td class="num">0.3%</td></tr>
+        <tr><td>Netflix (Premium)</td><td class="num">$28</td><td class="num">$331</td><td class="num">$22</td><td class="num red">+26%</td><td><span class="tag tag-warn">Cut Candidate</span></td><td class="num">0.2%</td></tr>
+        <tr><td>Spotify (Family)</td><td class="num">$22</td><td class="num">$264</td><td class="num">$11</td><td class="num red">+102%</td><td><span class="tag tag-on">Nice-to-Have</span></td><td class="num">0.2%</td></tr>
+        <tr><td>Google Workspace</td><td class="num">$22</td><td class="num">$259</td><td class="num">$17</td><td class="num red">+24%</td><td><span class="tag tag-keep">Must-Have</span></td><td class="num">0.2%</td></tr>
+        <tr><td>Hulu (ad-free)</td><td class="num">$21</td><td class="num">$251</td><td class="num">—</td><td class="num">—</td><td><span class="tag tag-warn">Cut Candidate</span></td><td class="num">0.2%</td></tr>
+        <tr><td>IL Tollway</td><td class="num">$20</td><td class="num">$240</td><td class="num">$20</td><td class="num">0%</td><td><span class="tag tag-keep">Must-Have</span></td><td class="num">0.2%</td></tr>
+        <tr><td>AmFam life insurance</td><td class="num">$20</td><td class="num">$240</td><td class="num">$20</td><td class="num">0%</td><td><span class="tag tag-keep">Must-Have</span></td><td class="num">0.2%</td></tr>
+        <tr><td>Max / HBO (ad-free)</td><td class="num">$19</td><td class="num">$225</td><td class="num">—</td><td class="num">—</td><td><span class="tag tag-warn">Cut Candidate</span></td><td class="num">0.2%</td></tr>
+        <tr><td>Apple (iCloud+TV++Hinge)</td><td class="num">$15</td><td class="num">$400</td><td class="num">$7</td><td class="num red">+114%</td><td><span class="tag tag-on">Nice-to-Have</span></td><td class="num">0.3%</td></tr>
+        <tr><td>Libro.fm (audiobooks)</td><td class="num">$15</td><td class="num">$180</td><td class="num">—</td><td class="num">—</td><td><span class="tag tag-on">Nice-to-Have</span></td><td class="num">0.1%</td></tr>
+        <tr><td>SpotHero (parking)</td><td class="num">$14</td><td class="num">$193</td><td class="num">—</td><td class="num">—</td><td><span class="tag tag-on">Nice-to-Have</span></td><td class="num">0.1%</td></tr>
+        <tr><td>Adobe Lightroom</td><td class="num">$11</td><td class="num">$127</td><td class="num">$11</td><td class="num">0%</td><td><span class="tag tag-on">Nice-to-Have</span></td><td class="num">0.1%</td></tr>
+        <tr class="row-total"><td><strong>Total subscriptions</strong></td><td class="num"><strong>$1,770</strong></td><td class="num"><strong>$21,474</strong></td><td></td><td></td><td></td><td class="num"><strong>14.8%</strong></td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <strong>14.8% of take-home pay</strong> goes to recurring charges. The top 5 subscriptions alone (gym, insurance, therapy×2, phone) account for 8.7%. Streaming services are only 1.0% — the biggest savings come from renegotiating Comcast, not cancelling Netflix.
+    </div>
+  </div>
+
+  <!-- ================= SECTION 4: DEBT vs INCOME ================= -->
+  <div class="section-title">4. Debt Service vs. Income</div>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-label">Debt-to-Income (DTI)</div><div class="kpi-value amber">44.3%</div><div class="kpi-sub">$5,305 / $11,975 monthly</div></div>
+    <div class="kpi"><div class="kpi-label">DTI After HELOC Payoff</div><div class="kpi-value green">28.2%</div><div class="kpi-sub">$3,372 / $11,975 (mortgage only)</div></div>
+    <div class="kpi"><div class="kpi-label">Total Debt Outstanding</div><div class="kpi-value red">$555,745</div><div class="kpi-sub">$471K mortgage + $70K HELOC + $15K reno</div></div>
+    <div class="kpi"><div class="kpi-label">Monthly Freed Up (2028)</div><div class="kpi-value green">+$1,933</div><div class="kpi-sub">HELOC $1,435 + Reno $498</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Debt Payoff Timeline — Cash Flow Impact</h2>
+    <canvas id="debtTimeline" height="90"></canvas>
+  </div>
+
+  <div class="card">
+    <h2>Debt Stack — What's Eating Your Income</h2>
+    <div class="debt-bar">
+      <div class="debt-bar-label">Mortgage (3.25%)</div>
+      <div class="debt-bar-track"><div class="debt-bar-fill" style="width:63.5%;background:#3b82f6;">$3,372</div></div>
+      <div class="debt-bar-val">28.2%</div>
+    </div>
+    <div class="debt-bar">
+      <div class="debt-bar-label">HELOC (8.5%)</div>
+      <div class="debt-bar-track"><div class="debt-bar-fill" style="width:27%;background:#ef4444;">$1,435</div></div>
+      <div class="debt-bar-val red">12.0%</div>
+    </div>
+    <div class="debt-bar">
+      <div class="debt-bar-label">Reno Loan (4.99%)</div>
+      <div class="debt-bar-track"><div class="debt-bar-fill" style="width:9.4%;background:#f59e0b;">$498</div></div>
+      <div class="debt-bar-val">4.2%</div>
+    </div>
+    <div style="margin-top:16px;padding-top:12px;border-top:1px solid #2a2d3a;display:flex;justify-content:space-between">
+      <span style="color:#8b8fa3;font-size:13px">Total debt service: <strong style="color:#e0e0e0">$5,305/mo</strong></span>
+      <span style="color:#8b8fa3;font-size:13px">After payoffs (mid-2028): <strong class="green">$3,372/mo</strong></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Post-Debt Freedom: How $1,933/mo Gets Reallocated</h2>
+    <canvas id="freedPie"></canvas>
+  </div>
+
+  <!-- ================= SECTION 5: REALISTIC MONTHLY PLAN ================= -->
+  <div class="section-title">5. The Realistic Monthly Plan</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>Now (April 2026)</h2>
+      <table>
+        <tbody>
+          <tr class="row-sub"><td>Income</td><td class="num green">$11,975</td></tr>
+          <tr><td>Housing debt service</td><td class="num">($5,305)</td></tr>
+          <tr><td>Utilities</td><td class="num">($323)</td></tr>
+          <tr><td>Essential services</td><td class="num">($569)</td></tr>
+          <tr><td>Health & wellness</td><td class="num">($621)</td></tr>
+          <tr><td>Professional tools</td><td class="num">($93)</td></tr>
+          <tr><td>Streaming</td><td class="num">($119)</td></tr>
+          <tr><td>Transport (recurring)</td><td class="num">($34)</td></tr>
+          <tr><td>Discretionary (with cuts)</td><td class="num">($2,702)</td></tr>
+          <tr class="row-total"><td><strong>Available for goals</strong></td><td class="num green"><strong>$2,209</strong></td></tr>
+          <tr><td>&nbsp;&nbsp;→ Extra HELOC payment</td><td class="num blue">$300</td></tr>
+          <tr><td>&nbsp;&nbsp;→ 529 contribution</td><td class="num blue">$300</td></tr>
+          <tr><td>&nbsp;&nbsp;→ Emergency fund</td><td class="num blue">$200</td></tr>
+          <tr><td>&nbsp;&nbsp;→ HSA top-up</td><td class="num blue">$358</td></tr>
+          <tr style="border-top:1px solid #2a2d3a"><td><strong>Cushion</strong></td><td class="num amber"><strong>$1,051</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2>After Debt Freedom (Mid-2028)</h2>
+      <table>
+        <tbody>
+          <tr class="row-sub"><td>Income</td><td class="num green">$11,975</td></tr>
+          <tr><td>Mortgage only</td><td class="num">($3,372)</td></tr>
+          <tr><td>Utilities</td><td class="num">($323)</td></tr>
+          <tr><td>Essential services</td><td class="num">($569)</td></tr>
+          <tr><td>Health & wellness</td><td class="num">($621)</td></tr>
+          <tr><td>Professional tools</td><td class="num">($93)</td></tr>
+          <tr><td>Streaming</td><td class="num">($95)</td></tr>
+          <tr><td>Transport (recurring)</td><td class="num">($34)</td></tr>
+          <tr><td>Discretionary</td><td class="num">($2,702)</td></tr>
+          <tr class="row-total"><td><strong>Available for goals</strong></td><td class="num green"><strong>$4,166</strong></td></tr>
+          <tr><td>&nbsp;&nbsp;→ 529 (increased to $500)</td><td class="num blue">$500</td></tr>
+          <tr><td>&nbsp;&nbsp;→ 401k bump (7%→10%)</td><td class="num blue">$400</td></tr>
+          <tr><td>&nbsp;&nbsp;→ Emergency fund (to 6 months)</td><td class="num blue">$400</td></tr>
+          <tr><td>&nbsp;&nbsp;→ HSA max</td><td class="num blue">$358</td></tr>
+          <tr style="border-top:1px solid #2a2d3a"><td><strong>Cushion / quality of life</strong></td><td class="num green"><strong>$2,508</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Seasonal Budget Adjustments</h2>
+    <canvas id="seasonalChart" height="80"></canvas>
+    <div class="callout" style="margin-top:12px">
+      <strong>Winter warning:</strong> Peoples Gas bills spike to $250-284/mo in Dec-Feb (vs. $46/mo in summer). Budget an extra $150/mo Nov-Feb, and use summer savings to offset. December also sees holiday spending spikes — the 2025 Dec CC total was $5,701 vs. $5,620 average.
+    </div>
+  </div>
+
+</div>
+
+<script>
+const dg = 'rgba(255,255,255,0.06)';
+Chart.defaults.color = '#8b8fa3';
+Chart.defaults.borderColor = dg;
+
+// Waterfall
+new Chart(document.getElementById('waterfall'), {
+  type: 'bar',
+  data: {
+    labels: ['Income','Housing Debt','Utilities','Essential Svc','Health','Prof Tools','Streaming','Transport','Discretionary','Remainder'],
+    datasets: [{
+      data: [11975,-5305,-323,-569,-621,-93,-119,-34,-3614,1286],
+      backgroundColor: (ctx) => {
+        if(ctx.dataIndex===0) return '#22c55e';
+        if(ctx.dataIndex===9) return '#06b6d4';
+        return '#ef4444';
+      },
+      borderRadius: 4
+    }]
+  },
+  options: { responsive:true, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+Math.abs(c.raw).toLocaleString()}}}, scales:{y:{ticks:{callback:v=>'$'+(v/1000).toFixed(1)+'K'},grid:{color:dg}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+});
+
+// Income allocation pie
+new Chart(document.getElementById('incomePie'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Housing Debt (44.3%)','Utilities (2.7%)','Essential Svc (4.8%)','Health (5.2%)','Prof Tools (0.8%)','Streaming (1.0%)','Discretionary (30.2%)','Remainder (10.7%)'],
+    datasets: [{
+      data: [5305,323,569,621,93,119,3614,1286],
+      backgroundColor: ['#ef4444','#f97316','#8b5cf6','#ec4899','#6366f1','#14b8a6','#f59e0b','#22c55e'],
+      borderWidth: 0
+    }]
+  },
+  options: { responsive:true, plugins:{legend:{position:'right',labels:{boxWidth:10,padding:6,font:{size:10}}},tooltip:{callbacks:{label:c=>` ${c.label}: $${c.raw.toLocaleString()}/mo`}}}}
+});
+
+// Category trend (grouped bar)
+new Chart(document.getElementById('categoryTrend'), {
+  type: 'bar',
+  data: {
+    labels: ['Dining','Target','Phone','Comcast','Coffee','Delivery','Streaming','Gym','Therapy','Insurance','Gas'],
+    datasets: [
+      {label:'2023 (monthly)',data:[1347,null,350,60,null,null,48,null,null,228,465],backgroundColor:'#64748b',borderRadius:3},
+      {label:'2024 (monthly)',data:[1126,null,374,88,null,null,85,null,null,228,315],backgroundColor:'#8b5cf6',borderRadius:3},
+      {label:'2025 (monthly)',data:[1021,511,374,107,178,169,119,302,509,248,227],backgroundColor:'#3b82f6',borderRadius:3},
+      {label:'2026 Target',data:[700,300,192,80,100,100,95,302,509,248,227],backgroundColor:'#22c55e',borderRadius:3}
+    ]
+  },
+  options: { responsive:true, plugins:{legend:{labels:{boxWidth:10,font:{size:11}}}}, scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{ticks:{callback:v=>'$'+v},grid:{color:dg}}}}
+});
+
+// Subscription pie
+new Chart(document.getElementById('subPie'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Health & Wellness','Essential Services','Utilities','Streaming','Professional','Transport'],
+    datasets: [{
+      data: [7454,6818,3876,1651,1110,433],
+      backgroundColor: ['#ec4899','#3b82f6','#f97316','#14b8a6','#6366f1','#64748b'],
+      borderWidth: 0
+    }]
+  },
+  options: { responsive:true, plugins:{legend:{position:'right',labels:{boxWidth:10,padding:8,font:{size:11}}},tooltip:{callbacks:{label:c=>` ${c.label}: $${c.raw.toLocaleString()}/yr`}}}}
+});
+
+// Streaming inflation
+new Chart(document.getElementById('inflationBar'), {
+  type: 'bar',
+  data: {
+    labels: ['Spotify\n(→Family)','Apple\nServices','Comcast\nInternet','Netflix\nPremium','Google\nWorkspace'],
+    datasets: [
+      {label:'2023',data:[10.89,7,60,21.79,17.48],backgroundColor:'#64748b',borderRadius:3},
+      {label:'2025',data:[22.04,15,107,27.55,21.60],backgroundColor:'#ef4444',borderRadius:3}
+    ]
+  },
+  options: { responsive:true, plugins:{legend:{labels:{boxWidth:10,font:{size:11}}}}, scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{ticks:{callback:v=>'$'+v},grid:{color:dg}}}}
+});
+
+// Debt timeline
+new Chart(document.getElementById('debtTimeline'), {
+  type: 'line',
+  data: {
+    labels: ['Apr 26','Jul 26','Oct 26','Jan 27','Apr 27','Jul 27','Oct 27','Jan 28','Apr 28','Jul 28','Oct 28','Jan 29'],
+    datasets: [
+      {label:'HELOC Balance',data:[70000,65500,61000,45000,40500,36000,31500,15000,10500,0,0,0],borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.1)',fill:true,tension:0.3,pointRadius:3},
+      {label:'Reno Loan Balance',data:[14879,13400,11900,10400,8900,7400,5900,4400,2900,1400,0,0],borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.1)',fill:true,tension:0.3,pointRadius:3},
+      {label:'Monthly Debt Service',data:[5305,5305,5305,5305,5305,5305,5305,5305,5305,3870,3372,3372],borderColor:'#3b82f6',borderDash:[5,5],fill:false,tension:0.1,pointRadius:3,yAxisID:'y2'}
+    ]
+  },
+  options: { responsive:true, plugins:{legend:{labels:{boxWidth:10,font:{size:11}}}}, scales:{y:{position:'left',ticks:{callback:v=>'$'+(v/1000)+'K'},grid:{color:dg}},y2:{position:'right',ticks:{callback:v=>'$'+(v/1000).toFixed(1)+'K'},grid:{display:false}},x:{grid:{display:false}}}}
+});
+
+// Post-debt pie
+new Chart(document.getElementById('freedPie'), {
+  type: 'doughnut',
+  data: {
+    labels: ['529 (increase to $500)','401k bump (7%→10%)','Emergency fund (6mo)','HSA max','Cushion / quality of life'],
+    datasets: [{
+      data: [500,400,400,358,2508],
+      backgroundColor: ['#3b82f6','#8b5cf6','#22c55e','#06b6d4','#f59e0b'],
+      borderWidth: 0
+    }]
+  },
+  options: { responsive:true, plugins:{legend:{position:'right',labels:{boxWidth:10,padding:8,font:{size:11}}},tooltip:{callbacks:{label:c=>` ${c.label}: $${c.raw.toLocaleString()}/mo`}}}}
+});
+
+// Seasonal chart
+new Chart(document.getElementById('seasonalChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    datasets: [
+      {label:'Gas Bill (Peoples)',data:[284,260,180,100,60,46,46,46,60,100,180,250],backgroundColor:'#f97316',borderRadius:2},
+      {label:'Electric (ComEd)',data:[130,125,110,100,105,120,156,150,130,110,100,115],backgroundColor:'#f59e0b',borderRadius:2},
+      {label:'CC Spending',data:[4798,5991,5492,6061,6407,6079,7325,6539,5620,7446,5836,5701],backgroundColor:'#3b82f6',borderRadius:2,yAxisID:'y2'}
+    ]
+  },
+  options: { responsive:true, plugins:{legend:{labels:{boxWidth:10,font:{size:11}}}}, scales:{y:{position:'left',ticks:{callback:v=>'$'+v},grid:{color:dg},title:{display:true,text:'Utility Cost',color:'#8b8fa3',font:{size:11}}},y2:{position:'right',ticks:{callback:v=>'$'+(v/1000)+'K'},grid:{display:false},title:{display:true,text:'CC Spending',color:'#8b8fa3',font:{size:11}}},x:{grid:{display:false}}}}
+});
+</script>
+</body>
+</html>
