@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wealth Roadmap — Andrew Day</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+  nav { background: #161922; border-bottom: 1px solid #2a2d3a; padding: 12px 24px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  nav a { color: #8b8fa3; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-size: 13px; transition: all 0.2s; }
+  nav a:hover { color: #fff; background: #2a2d3a; }
+  nav a.active { color: #fff; background: #3b82f6; }
+  nav .brand { color: #fff; font-weight: 700; font-size: 15px; margin-right: 16px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: #8b8fa3; font-size: 14px; margin-bottom: 32px; }
+
+  .timeline { position: relative; padding-left: 40px; }
+  .timeline::before { content: ''; position: absolute; left: 15px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, #3b82f6, #22c55e, #a855f7, #f59e0b); }
+
+  .phase { margin-bottom: 40px; position: relative; }
+  .phase-dot { position: absolute; left: -33px; top: 4px; width: 16px; height: 16px; border-radius: 50%; border: 3px solid; background: #0f1117; }
+  .phase-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+  .phase-title { font-size: 20px; font-weight: 700; }
+  .phase-dates { font-size: 13px; color: #8b8fa3; }
+  .phase-theme { font-size: 14px; color: #8b8fa3; font-style: italic; margin-bottom: 16px; }
+
+  .milestone-grid { display: grid; gap: 10px; }
+  .milestone { background: #161922; border: 1px solid #2a2d3a; border-radius: 10px; padding: 14px 18px; display: flex; align-items: flex-start; gap: 12px; transition: all 0.2s; }
+  .milestone:hover { border-color: #3b82f6; transform: translateX(4px); }
+  .milestone.done { border-color: #22c55e33; }
+  .m-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .m-body { flex: 1; }
+  .m-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .m-detail { font-size: 12px; color: #8b8fa3; line-height: 1.4; }
+  .m-month { font-size: 11px; color: #64748b; margin-top: 4px; }
+  .m-tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-left: 6px; }
+
+  .targets-card { background: #161922; border: 1px solid #2a2d3a; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  .targets-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  .target-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #1e2130; font-size: 13px; }
+  .target-row:last-child { border-bottom: none; }
+  .t-label { flex: 1; }
+  .t-start { color: #8b8fa3; width: 90px; text-align: right; }
+  .t-arrow { color: #3b82f6; }
+  .t-end { font-weight: 700; width: 90px; text-align: right; }
+
+  .priority-list { counter-reset: priority; }
+  .priority-item { background: #161922; border: 1px solid #2a2d3a; border-radius: 10px; padding: 16px 18px 16px 50px; margin-bottom: 10px; position: relative; }
+  .priority-item::before { counter-increment: priority; content: counter(priority); position: absolute; left: 16px; top: 16px; width: 24px; height: 24px; border-radius: 50%; background: #3b82f6; color: white; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .p-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .p-detail { font-size: 12px; color: #8b8fa3; }
+
+  .section-title { font-size: 18px; font-weight: 700; margin: 32px 0 16px; }
+
+  .icon-debt { background: rgba(239,68,68,0.15); color: #ef4444; }
+  .icon-save { background: rgba(34,197,94,0.15); color: #22c55e; }
+  .icon-invest { background: rgba(59,130,246,0.15); color: #3b82f6; }
+  .icon-college { background: rgba(236,72,153,0.15); color: #ec4899; }
+  .icon-cut { background: rgba(245,158,11,0.15); color: #f59e0b; }
+  .icon-check { background: rgba(34,197,94,0.15); color: #22c55e; }
+  .icon-retire { background: rgba(168,85,247,0.15); color: #a855f7; }
+</style>
+</head>
+<body>
+<nav>
+  <span class="brand">Andrew Day — Finances</span>
+  <a href="dashboard-01-financial-overview.html">Overview</a>
+  <a href="dashboard-02-cash-flow-budget.html">Cash Flow & Budget</a>
+  <a href="dashboard-03-debt-payoff.html">Debt Payoff</a>
+  <a href="dashboard-04-retirement-portfolio.html">Retirement</a>
+  <a href="dashboard-05-wealth-roadmap.html" class="active">Roadmap</a>
+</nav>
+<div class="container">
+  <h1>24-Month Wealth Roadmap</h1>
+  <p class="subtitle">April 2026 – March 2028 · From stabilization to freedom</p>
+
+  <!-- Priority Sequencing -->
+  <div class="section-title">Priority Sequence — When Cash Is Tight</div>
+  <div class="priority-list">
+    <div class="priority-item"><div class="p-title">Pay credit cards in full</div><div class="p-detail">Never carry a balance again. The HELOC consolidation was a one-time reset.</div></div>
+    <div class="priority-item"><div class="p-title">All minimum debt payments</div><div class="p-detail">Mortgage $3,372 + HELOC $1,435 + Reno $498 = $5,305/mo</div></div>
+    <div class="priority-item"><div class="p-title">401k at 7% (don't drop below 5% match)</div><div class="p-detail">$933/mo — free money from Schwab's 5% match</div></div>
+    <div class="priority-item"><div class="p-title">HELOC extra payment: $300/mo</div><div class="p-detail">8.5% guaranteed return. Highest-impact use of marginal dollars</div></div>
+    <div class="priority-item"><div class="p-title">Emergency fund: $200/mo</div><div class="p-detail">Until reaching $24K. Prevents the next debt spiral</div></div>
+    <div class="priority-item"><div class="p-title">529 contribution: $300/mo</div><div class="p-detail">Clock ticking — 5 years to Elise's college</div></div>
+    <div class="priority-item"><div class="p-title">HSA max-out: $358/mo</div><div class="p-detail">Triple tax advantage. Invest, never spend from it</div></div>
+    <div class="priority-item"><div class="p-title">Annual bonus → 100% to HELOC</div><div class="p-detail">~$16,500 after tax. Two bonus hits eliminate the HELOC</div></div>
+  </div>
+
+  <!-- Phase targets -->
+  <div class="section-title">Where You'll Be</div>
+  <div class="targets-card">
+    <h3>Key Metrics: Start vs. End of 24 Months</h3>
+    <div class="target-row"><span class="t-label">HELOC Balance</span><span class="t-start red">$70,000</span><span class="t-arrow">→</span><span class="t-end green">$0</span></div>
+    <div class="target-row"><span class="t-label">Renovation Loan</span><span class="t-start red">$14,879</span><span class="t-arrow">→</span><span class="t-end green">~$0</span></div>
+    <div class="target-row"><span class="t-label">Emergency Fund</span><span class="t-start amber">$14,000</span><span class="t-arrow">→</span><span class="t-end green">$24,000+</span></div>
+    <div class="target-row"><span class="t-label">529 (Bright Start)</span><span class="t-start">$5,000</span><span class="t-arrow">→</span><span class="t-end" style="color:#ec4899">~$18,000</span></div>
+    <div class="target-row"><span class="t-label">Retirement Portfolio</span><span class="t-start">$684,000</span><span class="t-arrow">→</span><span class="t-end blue">~$840,000</span></div>
+    <div class="target-row"><span class="t-label">Monthly Cash Freed</span><span class="t-start">$0</span><span class="t-arrow">→</span><span class="t-end green">+$2,233/mo</span></div>
+    <div class="target-row"><span class="t-label">Monthly Spending Cuts</span><span class="t-start">$0</span><span class="t-arrow">→</span><span class="t-end green">$847/mo saved</span></div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="section-title">24-Month Timeline</div>
+  <div class="timeline">
+
+    <!-- Phase 1 -->
+    <div class="phase">
+      <div class="phase-dot" style="border-color: #3b82f6;"></div>
+      <div class="phase-header">
+        <span class="phase-title" style="color:#3b82f6">Phase 1: Stabilize</span>
+        <span class="phase-dates">April – June 2026</span>
+      </div>
+      <div class="phase-theme">Stop the bleeding, build the foundation</div>
+      <div class="milestone-grid">
+        <div class="milestone done">
+          <div class="m-icon icon-cut">$</div>
+          <div class="m-body"><div class="m-title">Switch Verizon → T-Mobile <span class="m-tag" style="background:rgba(34,197,94,0.15);color:#22c55e">Done</span></div><div class="m-detail">$374 → $192/mo. Saves $182/month — biggest single cut</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-cut">✂</div>
+          <div class="m-body"><div class="m-title">Implement food spending target: $1,250/mo</div><div class="m-detail">Down from $1,605. Cut 2-3 dining out meals/week, reduce Grubhub</div><div class="m-month">April</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-debt">↓</div>
+          <div class="m-body"><div class="m-title">Start $300/mo extra HELOC payment</div><div class="m-detail">Total HELOC payment: $1,735/mo. Payoff accelerated to June 2028</div><div class="m-month">April</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-college">♡</div>
+          <div class="m-body"><div class="m-title">Set up $300/mo auto-transfer to Bright Start 529</div><div class="m-detail">For Elise's college Fall 2031. IL tax deduction: ~$178/yr savings</div><div class="m-month">April</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-save">☂</div>
+          <div class="m-body"><div class="m-title">Start $200/mo emergency fund build</div><div class="m-detail">Target: $24K (3 months essential expenses). Currently at $14K</div><div class="m-month">April</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-invest">↗</div>
+          <div class="m-body"><div class="m-title">Complete Fidelity 401k → Schwab rollover</div><div class="m-detail">$108,500 incoming. Swap FTBFX → SWAGX (saves $145/yr). Deploy into SCHP + SWAGX</div><div class="m-month">April–May</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-invest">↗</div>
+          <div class="m-body"><div class="m-title">Invest HSA at Optum Bank</div><div class="m-detail">$2,787 sitting in cash. Put 100% in total market index fund</div><div class="m-month">May</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-check">?</div>
+          <div class="m-body"><div class="m-title">Check Victory Capital 529 balance</div><div class="m-detail">Unknown balance for Elise. Could change the college funding picture</div><div class="m-month">May</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-check">✓</div>
+          <div class="m-body"><div class="m-title">Q1 check: Are spending cuts holding?</div><div class="m-detail">Review CC statements. Adjust if needed. HELOC should be ~$67K</div><div class="m-month">June</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="phase">
+      <div class="phase-dot" style="border-color: #22c55e;"></div>
+      <div class="phase-header">
+        <span class="phase-title" style="color:#22c55e">Phase 2: Accelerate</span>
+        <span class="phase-dates">July – December 2026</span>
+      </div>
+      <div class="phase-theme">Spending habits solidified, HELOC attacked aggressively</div>
+      <div class="milestone-grid">
+        <div class="milestone">
+          <div class="m-icon icon-invest">⟳</div>
+          <div class="m-body"><div class="m-title">Mid-year portfolio rebalance</div><div class="m-detail">Sell $50K SWLGX + $15K VTIAX in IRA → buy SWAGX. Trim SWISX + SWTSX in 401k → buy SCHP</div><div class="m-month">July</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-college">✎</div>
+          <div class="m-body"><div class="m-title">Back-to-school budget for Elise</div><div class="m-detail">Budget $500 from monthly cushion. Don't dip into emergency fund</div><div class="m-month">August</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-cut">✂</div>
+          <div class="m-body"><div class="m-title">Holiday spending cap: $1,000</div><div class="m-detail">Dec 2025 was $5,701 — set and enforce a limit. Plan gifts in Nov</div><div class="m-month">November</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-debt" style="font-size:18px">★</div>
+          <div class="m-body"><div class="m-title">Schwab bonus → 100% to HELOC</div><div class="m-detail">~$16,500 after tax. HELOC drops from ~$52K to ~$45K</div><div class="m-month">December</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="phase">
+      <div class="phase-dot" style="border-color: #a855f7;"></div>
+      <div class="phase-header">
+        <span class="phase-title" style="color:#a855f7">Phase 3: Grind</span>
+        <span class="phase-dates">January – June 2027</span>
+      </div>
+      <div class="phase-theme">Steady state. Boring is good.</div>
+      <div class="milestone-grid">
+        <div class="milestone">
+          <div class="m-icon icon-check">✓</div>
+          <div class="m-body"><div class="m-title">Annual spending review</div><div class="m-detail">Compare all 2026 categories to targets. Recalibrate where needed</div><div class="m-month">January</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-invest">↗</div>
+          <div class="m-body"><div class="m-title">Max HSA if not already via payroll</div><div class="m-detail">$4,300/year. Triple tax benefit — the best account Andrew owns</div><div class="m-month">January</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-check">★</div>
+          <div class="m-body"><div class="m-title">Schwab 1-year anniversary</div><div class="m-detail">Confirm bonus structure, 401k vesting, review benefits enrollment</div><div class="m-month">February</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-save">$</div>
+          <div class="m-body"><div class="m-title">File 2026 taxes → refund to emergency fund</div><div class="m-detail">Could add $5-7K. May reach $24K target with this alone</div><div class="m-month">March</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-check">✓</div>
+          <div class="m-body"><div class="m-title">1-year plan review</div><div class="m-detail">Full comparison to April 2026 baseline. HELOC should be ~$27K. 529 ~$12.5K</div><div class="m-month">April</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 4 -->
+    <div class="phase">
+      <div class="phase-dot" style="border-color: #f59e0b;"></div>
+      <div class="phase-header">
+        <span class="phase-title" style="color:#f59e0b">Phase 4: HELOC Kill Shot</span>
+        <span class="phase-dates">July – December 2027</span>
+      </div>
+      <div class="phase-theme">The finish line is in sight</div>
+      <div class="milestone-grid">
+        <div class="milestone">
+          <div class="m-icon icon-debt">↓</div>
+          <div class="m-body"><div class="m-title">HELOC balance ~$25,000</div><div class="m-detail">Down from $70K. 18 months of discipline paying off</div><div class="m-month">July</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-retire">☞</div>
+          <div class="m-body"><div class="m-title">Plan post-HELOC allocation</div><div class="m-detail">Decide: $500/mo to 529, increase 401k to 10%, build cushion</div><div class="m-month">September</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-debt" style="font-size:18px">★</div>
+          <div class="m-body"><div class="m-title">Second bonus → HELOC</div><div class="m-detail">~$16,500 after tax. HELOC drops to ~$8,000. Nearly dead</div><div class="m-month">December</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 5 -->
+    <div class="phase">
+      <div class="phase-dot" style="border-color: #22c55e; background: #22c55e;"></div>
+      <div class="phase-header">
+        <span class="phase-title" style="color:#22c55e">Phase 5: Freedom</span>
+        <span class="phase-dates">January – March 2028</span>
+      </div>
+      <div class="phase-theme">HELOC paid off. $2,233/month unlocked.</div>
+      <div class="milestone-grid">
+        <div class="milestone">
+          <div class="m-icon icon-check" style="font-size:18px">🎉</div>
+          <div class="m-body"><div class="m-title">HELOC PAID OFF</div><div class="m-detail">Saved ~$9,269 in interest vs. minimum payments. 2.5 years early</div><div class="m-month">~February 2028</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-college">↑</div>
+          <div class="m-body"><div class="m-title">Increase 529 to $500/month</div><div class="m-detail">3.5 years left to Elise's college. Every month counts now</div><div class="m-month">February</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-retire">↑</div>
+          <div class="m-body"><div class="m-title">Increase 401k from 7% → 10%</div><div class="m-detail">+$400/mo pre-tax. Boost retirement savings for final 8 years</div><div class="m-month">February</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-save">↑</div>
+          <div class="m-body"><div class="m-title">Renovation loan pays off (~Nov 2028)</div><div class="m-detail">Another $498/mo freed. Total debt service drops to mortgage only ($3,372)</div><div class="m-month">Later in 2028</div></div>
+        </div>
+        <div class="milestone">
+          <div class="m-icon icon-check">✓</div>
+          <div class="m-body"><div class="m-title">24-month plan review</div><div class="m-detail">Emergency fund $24K+ ✓ · HELOC $0 ✓ · 529 ~$18K · Retirement ~$840K</div><div class="m-month">March 2028</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Looking Ahead -->
+  <div class="section-title">Looking Ahead</div>
+  <div class="targets-card">
+    <h3>Key Dates After This Plan</h3>
+    <div class="target-row"><span class="t-label">Renovation loan pays off</span><span class="t-end">Nov 2028</span></div>
+    <div class="target-row"><span class="t-label">Elise starts college</span><span class="t-end" style="color:#ec4899">Fall 2031</span></div>
+    <div class="target-row"><span class="t-label">Andrew retires (target)</span><span class="t-end" style="color:#a855f7">2036 (age 63)</span></div>
+    <div class="target-row"><span class="t-label">Projected retirement portfolio</span><span class="t-end green">$1.67M</span></div>
+    <div class="target-row"><span class="t-label">Projected retirement income</span><span class="t-end green">~$12,250/mo</span></div>
+  </div>
+
+</div>
+</body>
+</html>

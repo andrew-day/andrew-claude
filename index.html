@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Travels 1972–now</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <!-- MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    header {
+      background: #16213e;
+      padding: 10px 16px 0;
+      border-bottom: 1px solid #0f3460;
+      flex-shrink: 0;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #e0e0e0;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    #event-count {
+      font-size: 0.78rem;
+      color: #7a9cc0;
+    }
+
+    /* ── Year tabs ───────────────────────────────────────── */
+    .tabs-wrapper {
+      overflow-x: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #0f3460 transparent;
+    }
+    .tabs-wrapper::-webkit-scrollbar { height: 3px; }
+    .tabs-wrapper::-webkit-scrollbar-thumb { background: #0f3460; }
+
+    .tabs {
+      display: flex;
+      gap: 2px;
+      padding-bottom: 0;
+      min-width: max-content;
+    }
+
+    .tab {
+      padding: 6px 10px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #7a9cc0;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.15s, border-color 0.15s;
+      border-radius: 4px 4px 0 0;
+    }
+    .tab:hover { color: #c0d8f0; }
+    .tab.active {
+      color: #5baeff;
+      border-bottom-color: #5baeff;
+      background: rgba(91,174,255,0.08);
+    }
+    .tab .badge {
+      display: inline-block;
+      margin-left: 4px;
+      font-size: 0.65rem;
+      color: #4a6a8a;
+    }
+    .tab.active .badge { color: #4a9acc; }
+
+    /* ── Map ─────────────────────────────────────────────── */
+    #map {
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* ── Popup ───────────────────────────────────────────── */
+    .leaflet-popup-content-wrapper {
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      max-width: 320px;
+    }
+    .leaflet-popup-tip { background: #16213e; }
+    .leaflet-popup-close-button { color: #7a9cc0 !important; top: 8px !important; right: 8px !important; }
+    .leaflet-popup-close-button:hover { color: #c0d8f0 !important; }
+    .leaflet-popup-content { margin: 14px 16px; }
+
+    .popup-label {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #c8e0ff;
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+
+    .popup-detail {
+      font-size: 0.88rem;
+      color: #a0c0e8;
+      margin-bottom: 8px;
+      font-style: italic;
+    }
+
+    .popup-meta {
+      font-size: 0.78rem;
+      color: #7a9cc0;
+      margin-bottom: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 10px;
+    }
+    .popup-meta span::before { content: ""; }
+
+    .popup-fields { margin-top: 6px; }
+
+    .popup-field {
+      font-size: 0.78rem;
+      color: #8aabb8;
+      margin-bottom: 3px;
+      line-height: 1.4;
+    }
+    .popup-field strong {
+      color: #6a8fa8;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+
+    .popup-map-link {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 0.78rem;
+      color: #5baeff;
+      text-decoration: none;
+      border: 1px solid #1a4a7a;
+      border-radius: 4px;
+      padding: 3px 8px;
+      transition: background 0.15s;
+    }
+    .popup-map-link:hover { background: rgba(91,174,255,0.12); }
+
+    /* ── Map Style Control ───────────────────────────────── */
+    .style-control {
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+      min-width: 148px;
+    }
+
+    .style-control-header {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #7a9cc0;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 7px 10px 5px;
+      border-bottom: 1px solid #0f3460;
+    }
+
+    .style-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      color: #9ab8d0;
+      cursor: pointer;
+      transition: background 0.12s;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+    .style-option:hover { background: rgba(91,174,255,0.08); }
+    .style-option.active { color: #5baeff; }
+
+    .style-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Leaflet cluster colors */
+    .marker-cluster-small { background-color: rgba(91,174,255,0.4); }
+    .marker-cluster-small div { background-color: rgba(91,174,255,0.7); }
+    .marker-cluster-medium { background-color: rgba(255,180,50,0.4); }
+    .marker-cluster-medium div { background-color: rgba(255,180,50,0.7); }
+    .marker-cluster-large { background-color: rgba(255,80,80,0.4); }
+    .marker-cluster-large div { background-color: rgba(255,80,80,0.7); }
+    .marker-cluster div { color: #fff; font-weight: 700; font-size: 12px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <h1>Travels 1972–now</h1>
+    <span id="event-count"></span>
+  </div>
+  <div class="tabs-wrapper">
+    <div class="tabs" id="tabs"></div>
+  </div>
+</header>
+
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- MarkerCluster JS -->
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<!-- Data -->
+<script src="travels_data.js"></script>
+
+<script>
+// ── Tile layers ─────────────────────────────────────────────────────────────
+const TILE_LAYERS = [
+  {
+    id: 'osm',
+    name: 'Street',
+    color: '#5baeff',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
+  },
+  {
+    id: 'carto-dark',
+    name: 'Dark',
+    color: '#2a2a3a',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> © <a href="https://carto.com">CARTO</a>',
+  },
+  {
+    id: 'topo',
+    name: 'Terrain',
+    color: '#7aaa7a',
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> © <a href="https://opentopomap.org">OpenTopoMap</a>',
+  },
+  {
+    id: 'satellite',
+    name: 'Satellite',
+    color: '#8a6a3a',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles © Esri — Source: Esri, USGS, NOAA',
+    subdomains: '',
+  },
+  {
+    id: 'watercolor',
+    name: 'Watercolor',
+    color: '#aaddee',
+    url: 'https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg',
+    attribution: '© <a href="https://stamen.com">Stamen Design</a> © <a href="https://openstreetmap.org">OpenStreetMap</a>',
+  },
+];
+
+// ── Init map ────────────────────────────────────────────────────────────────
+const map = L.map('map', {
+  center: [30, 10],
+  zoom: 3,
+  zoomControl: true,
+});
+
+let currentTileLayer = null;
+
+function setTileLayer(id) {
+  const def = TILE_LAYERS.find(l => l.id === id);
+  if (!def) return;
+  if (currentTileLayer) map.removeLayer(currentTileLayer);
+  const opts = { attribution: def.attribution };
+  if (def.subdomains !== undefined) opts.subdomains = def.subdomains;
+  currentTileLayer = L.tileLayer(def.url, opts).addTo(map);
+
+  // Update style control buttons
+  document.querySelectorAll('.style-option').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.id === id);
+  });
+  localStorage.setItem('travelMapStyle', id);
+}
+
+// Default to dark, or restore saved
+const savedStyle = localStorage.getItem('travelMapStyle') || 'carto-dark';
+setTileLayer(savedStyle);
+
+// ── Custom Map Style Control (bottom-left) ──────────────────────────────────
+const StyleControl = L.Control.extend({
+  options: { position: 'bottomleft' },
+  onAdd() {
+    const el = L.DomUtil.create('div', 'style-control');
+    L.DomEvent.disableClickPropagation(el);
+    L.DomEvent.disableScrollPropagation(el);
+
+    el.innerHTML = `<div class="style-control-header">Map Style</div>` +
+      TILE_LAYERS.map(l =>
+        `<button class="style-option${l.id === savedStyle ? ' active' : ''}" data-id="${l.id}">
+          <span class="style-dot" style="background:${l.color}"></span>
+          ${l.name}
+        </button>`
+      ).join('');
+
+    el.querySelectorAll('.style-option').forEach(btn => {
+      btn.addEventListener('click', () => setTileLayer(btn.dataset.id));
+    });
+    return el;
+  },
+});
+new StyleControl().addTo(map);
+
+// ── Build year index ────────────────────────────────────────────────────────
+const yearCounts = {};
+TRAVELS_DATA.forEach(e => {
+  const y = e.year || '';
+  if (/^\d{4}$/.test(y)) yearCounts[y] = (yearCounts[y] || 0) + 1;
+});
+
+const validYears = Object.keys(yearCounts).sort((a, b) => +a - +b);
+
+// ── Marker layer management ─────────────────────────────────────────────────
+let clusterLayer = null;
+let activeYear = 'all';
+
+function buildPopup(e) {
+  const parts = [];
+
+  parts.push(`<div class="popup-label">${esc(e.label)}</div>`);
+
+  if (e.detail) {
+    parts.push(`<div class="popup-detail">${esc(e.detail)}</div>`);
+  }
+
+  const metaParts = [];
+  if (e.date)    metaParts.push(`<span>${esc(e.date)}</span>`);
+  const place = [e.city, e.country].filter(Boolean).join(', ');
+  if (place)     metaParts.push(`<span>${esc(place)}</span>`);
+  if (metaParts.length) {
+    parts.push(`<div class="popup-meta">${metaParts.join('')}</div>`);
+  }
+
+  const extra = [];
+  if (e.about)  extra.push(`<div class="popup-field"><strong>About</strong>${esc(e.about)}</div>`);
+  if (e.folks)  extra.push(`<div class="popup-field"><strong>Folks</strong>${esc(e.folks)}</div>`);
+  if (extra.length) parts.push(`<div class="popup-fields">${extra.join('')}</div>`);
+
+  if (e.map_url) {
+    parts.push(`<a class="popup-map-link" href="${esc(e.map_url)}" target="_blank" rel="noopener">View on Google Maps ↗</a>`);
+  }
+
+  return parts.join('');
+}
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function showYear(year) {
+  activeYear = year;
+
+  // Update tab highlight
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.year === year)
+  );
+
+  // Filter data
+  const events = year === 'all'
+    ? TRAVELS_DATA
+    : TRAVELS_DATA.filter(e => e.year === year);
+
+  // Update count
+  document.getElementById('event-count').textContent =
+    `${events.length.toLocaleString()} location${events.length !== 1 ? 's' : ''}`;
+
+  // Remove existing cluster layer
+  if (clusterLayer) map.removeLayer(clusterLayer);
+
+  clusterLayer = L.markerClusterGroup({
+    maxClusterRadius: 40,
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false,
+    zoomToBoundsOnClick: true,
+    chunkedLoading: true,
+  });
+
+  const markers = events
+    .filter(e => e.lat && e.lng)
+    .map(e => {
+      const m = L.marker([e.lat, e.lng]);
+      m.bindPopup(buildPopup(e), { maxWidth: 320, minWidth: 200 });
+      return m;
+    });
+
+  clusterLayer.addLayers(markers);
+  map.addLayer(clusterLayer);
+}
+
+// ── Build tab bar ───────────────────────────────────────────────────────────
+const tabsEl = document.getElementById('tabs');
+
+function makeTab(year, label, count) {
+  const btn = document.createElement('button');
+  btn.className = 'tab';
+  btn.dataset.year = year;
+  btn.innerHTML = `${label}${count != null ? `<span class="badge">${count.toLocaleString()}</span>` : ''}`;
+  btn.addEventListener('click', () => showYear(year));
+  tabsEl.appendChild(btn);
+  return btn;
+}
+
+// "All" tab
+makeTab('all', 'All', TRAVELS_DATA.length);
+
+// Year tabs (chronological, oldest first)
+validYears.forEach(y => makeTab(y, y, yearCounts[y]));
+
+// ── Initial render ──────────────────────────────────────────────────────────
+showYear('all');
+
+// Scroll active tab into view on tab click
+tabsEl.addEventListener('click', e => {
+  const tab = e.target.closest('.tab');
+  if (tab) tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+});
+</script>
+</body>
+</html>
