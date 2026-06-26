@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Andrew's 2025 Credit Card Spending Report</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --card: #21253a;
+    --border: #2e3350;
+    --accent: #6c8fff;
+    --accent2: #ff8c6b;
+    --accent3: #5dd6a8;
+    --text: #e8eaf6;
+    --muted: #8892b0;
+    --cap1: #6c8fff;
+    --citiaa: #ff8c6b;
+    --citidc: #5dd6a8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 14px; line-height: 1.6; }
+
+  /* ── HEADER ─────────────────────────────────────────────── */
+  header {
+    background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 32px 40px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  header h1 span { color: var(--accent); }
+  header .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+  .badge-cap1 { background: rgba(108,143,255,.15); color: var(--cap1); border: 1px solid rgba(108,143,255,.3); }
+  .badge-citiaa { background: rgba(255,140,107,.15); color: var(--citiaa); border: 1px solid rgba(255,140,107,.3); }
+  .badge-citidc { background: rgba(93,214,168,.15); color: var(--citidc); border: 1px solid rgba(93,214,168,.3); }
+  .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+  /* ── LAYOUT ─────────────────────────────────────────────── */
+  .container { max-width: 1300px; margin: 0 auto; padding: 32px 24px; }
+  .section { margin-bottom: 48px; }
+  .section-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .section-title .icon { font-size: 20px; }
+
+  /* ── SUMMARY CARDS ───────────────────────────────────────── */
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 36px; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; transition: border-color .2s; }
+  .stat-card:hover { border-color: var(--accent); }
+  .stat-card .label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+  .stat-card .value { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
+  .stat-card .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .stat-card.accent1 .value { color: var(--accent); }
+  .stat-card.accent2 .value { color: var(--accent2); }
+  .stat-card.accent3 .value { color: var(--accent3); }
+
+  /* ── CHART GRID ──────────────────────────────────────────── */
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .chart-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 900px) { .chart-grid, .chart-grid.three { grid-template-columns: 1fr; } }
+
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+  .chart-card.full { grid-column: 1 / -1; }
+  .chart-card .chart-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 18px; letter-spacing: 0.2px; }
+  .chart-wrap { position: relative; }
+
+  /* ── TABLES ──────────────────────────────────────────────── */
+  .table-wrapper { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; background: var(--card); }
+  thead th { background: #1e2235; color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; padding: 12px 16px; text-align: left; cursor: pointer; user-select: none; white-space: nowrap; }
+  thead th:hover { color: var(--accent); }
+  thead th.sorted { color: var(--accent); }
+  thead th .sort-arrow { margin-left: 4px; opacity: 0.5; }
+  thead th.sorted .sort-arrow { opacity: 1; }
+  tbody tr { border-top: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:hover { background: rgba(108,143,255,0.06); }
+  tbody td { padding: 11px 16px; }
+  td.money { font-weight: 700; color: var(--accent3); font-variant-numeric: tabular-nums; }
+  td.count-badge { }
+  .rank { color: var(--muted); font-size: 12px; font-weight: 700; }
+  .prog-wrap { display: flex; align-items: center; gap: 10px; }
+  .prog-bar-bg { flex: 1; height: 5px; background: var(--border); border-radius: 4px; }
+  .prog-bar { height: 5px; background: var(--accent); border-radius: 4px; transition: width .3s; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 12px; font-size: 11px; font-weight: 600; background: rgba(108,143,255,.12); color: var(--accent); border: 1px solid rgba(108,143,255,.2); }
+  .pill-green { background: rgba(93,214,168,.12); color: var(--accent3); border-color: rgba(93,214,168,.2); }
+  .pill-orange { background: rgba(255,140,107,.12); color: var(--citiaa); border-color: rgba(255,140,107,.2); }
+
+  /* ── TABS ────────────────────────────────────────────────── */
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+  .tab { padding: 7px 18px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); border: 1px solid transparent; transition: all .15s; }
+  .tab:hover { color: var(--text); background: var(--surface); }
+  .tab.active { color: var(--accent); background: rgba(108,143,255,.12); border-color: rgba(108,143,255,.3); }
+
+  /* ── FOOTER ──────────────────────────────────────────────── */
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 24px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Andrew's <span>2025</span> Spending Report</h1>
+    <div class="subtitle">All three credit cards · Jan 1 – Dec 23, 2025</div>
+    <div class="badges">
+      <span class="badge badge-cap1">Capital One VentureOne</span>
+      <span class="badge badge-citiaa">Citi AA AAdvantage</span>
+      <span class="badge badge-citidc">Citi DoubleCash</span>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- SUMMARY STATS -->
+  <div class="summary-grid">
+    <div class="stat-card accent1">
+      <div class="label">Total Spent</div>
+      <div class="value">$73,294</div>
+      <div class="sub">Across all 3 cards</div>
+    </div>
+    <div class="stat-card accent2">
+      <div class="label">Total Transactions</div>
+      <div class="value">1,391</div>
+      <div class="sub">Avg $52.69 per transaction</div>
+    </div>
+    <div class="stat-card accent3">
+      <div class="label">Avg Monthly Spend</div>
+      <div class="value">$6,108</div>
+      <div class="sub">Jan – Dec 2025</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Top Category</div>
+      <div class="value" style="font-size:18px;color:var(--accent2)">Restaurants</div>
+      <div class="sub">$12,256 · 449 transactions</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Top Vendor</div>
+      <div class="value" style="font-size:18px;color:var(--accent)">Target</div>
+      <div class="sub">$6,135 · 33 visits</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Most Frequent</div>
+      <div class="value" style="font-size:16px;color:var(--accent3)">Local Restaurants</div>
+      <div class="sub">Toast/Square · 247 visits</div>
+    </div>
+  </div>
+
+  <!-- MONTHLY SPENDING CHART (full width) -->
+  <div class="section">
+    <div class="section-title"><span class="icon">📅</span> Monthly Spending by Card</div>
+    <div class="chart-card full">
+      <div class="chart-title">Monthly Spending Breakdown — 2025</div>
+      <div class="chart-wrap" style="height:280px">
+        <canvas id="monthlyChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIE + TOP CATEGORIES BAR -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🏷️</span> Spending by Category</div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-title">Category Distribution (Top 10)</div>
+        <div class="chart-wrap" style="height:300px">
+          <canvas id="pieChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Top 20 Categories by Spend</div>
+        <div class="chart-wrap" style="height:300px">
+          <canvas id="catBarChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <br>
+    <!-- Category Table -->
+    <div class="table-wrapper">
+      <table id="catTable">
+        <thead>
+          <tr>
+            <th class="sorted" onclick="sortTable('catTable',0)" data-sort="num"># <span class="sort-arrow">▼</span></th>
+            <th onclick="sortTable('catTable',1)">Category <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('catTable',2)" data-sort="money">Total Spent <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('catTable',3)" data-sort="num">Transactions <span class="sort-arrow">↕</span></th>
+            <th>% of Total</th>
+            <th>Spend Bar</th>
+          </tr>
+        </thead>
+        <tbody id="catTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TOP VENDORS CHART + TABLE -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🏪</span> Top 40 Vendors</div>
+    <div class="chart-card full" style="margin-bottom:16px">
+      <div class="chart-title">Top 20 Vendors by Spend</div>
+      <div class="chart-wrap" style="height:320px">
+        <canvas id="vendBarChart"></canvas>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table id="vendTable">
+        <thead>
+          <tr>
+            <th class="sorted" onclick="sortTable('vendTable',0)" data-sort="num"># <span class="sort-arrow">▼</span></th>
+            <th onclick="sortTable('vendTable',1)">Vendor <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('vendTable',2)" data-sort="money">Total Spent <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('vendTable',3)" data-sort="num">Transactions <span class="sort-arrow">↕</span></th>
+            <th>Spend Bar</th>
+          </tr>
+        </thead>
+        <tbody id="vendTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TOP RECURRING ITEMS -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🔁</span> Top 20 Frequently Purchased Items</div>
+    <div class="chart-card full" style="margin-bottom:16px">
+      <div class="chart-title">Most Frequent Purchases (by count)</div>
+      <div class="chart-wrap" style="height:280px">
+        <canvas id="recBarChart"></canvas>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table id="recTable">
+        <thead>
+          <tr>
+            <th class="sorted" onclick="sortTable('recTable',0)" data-sort="num"># <span class="sort-arrow">▼</span></th>
+            <th onclick="sortTable('recTable',1)">Item <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('recTable',2)" data-sort="num">Times Bought <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('recTable',3)" data-sort="money">Total Spent <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('recTable',4)" data-sort="money">Avg per Purchase <span class="sort-arrow">↕</span></th>
+            <th>Frequency Bar</th>
+          </tr>
+        </thead>
+        <tbody id="recTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Generated from 37 credit card statement PDFs (Capital One VentureOne · Citi AA AAdvantage · Citi DoubleCash) &nbsp;·&nbsp; Jan–Dec 2025
+</footer>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const CATS = [{"cat":"Restaurants & Dining","total":12255.84,"count":449},{"cat":"Target","total":6134.99,"count":33},{"cat":"Therapy & Mental Health","total":6108.0,"count":33},{"cat":"Phone & Internet Bills","total":4734.49,"count":21},{"cat":"Fitness & Gym","total":3654.74,"count":13},{"cat":"Other / Miscellaneous","total":2960.9,"count":177},{"cat":"Groceries & Supermarkets","total":2848.26,"count":19},{"cat":"Insurance","total":2731.4,"count":3},{"cat":"Gas & Fuel","total":2726.59,"count":141},{"cat":"Software & Subscriptions","total":2629.86,"count":78},{"cat":"Pharmacy & Medical","total":2475.46,"count":49},{"cat":"Amazon & Online Retail","total":2449.29,"count":47},{"cat":"Home & Hardware","total":2208.28,"count":32},{"cat":"Outdoor & Sports","total":2164.97,"count":14},{"cat":"Coffee & Cafes","total":2135.4,"count":46},{"cat":"Food Delivery","total":2024.41,"count":31},{"cat":"Hotels & Lodging","total":1865.94,"count":13},{"cat":"Kids & Family","total":1246.81,"count":6},{"cat":"Streaming Services","total":1223.83,"count":48},{"cat":"Pet Care","total":1121.52,"count":10}];
+const VEND = [{"vendor":"Target","total":6134.99,"count":33},{"vendor":"Chicago CBT Center (Therapy)","total":4378.0,"count":22},{"vendor":"Midtown Chicago (Gym Membership)","total":3626.33,"count":12},{"vendor":"Verizon","total":3362.84,"count":9},{"vendor":"Local Restaurant (Toast)","total":3106.49,"count":125},{"vendor":"American Family Insurance","total":2731.4,"count":3},{"vendor":"Local Vendor (Square)","total":2694.72,"count":122},{"vendor":"Fresh Market Place","total":2508.31,"count":29},{"vendor":"Amazon","total":2449.29,"count":47},{"vendor":"Grubhub","total":2024.41,"count":31},{"vendor":"Starbucks","total":1991.21,"count":29},{"vendor":"Handle w/ Care Therapy","total":1440.0,"count":8},{"vendor":"Instacart","total":1411.61,"count":8},{"vendor":"MedVet Animal Hospital","total":1239.0,"count":1},{"vendor":"Comcast","total":1177.0,"count":11},{"vendor":"Mariano's","total":1098.53,"count":7},{"vendor":"Pharmacy","total":1072.81,"count":33},{"vendor":"Home Depot","total":833.21,"count":14},{"vendor":"Booking.com","total":825.38,"count":4},{"vendor":"Astera Heating & Cooling","total":805.0,"count":2},{"vendor":"Petco","total":656.52,"count":8},{"vendor":"Dick's Sporting Goods","total":643.86,"count":3},{"vendor":"Webflow","total":567.21,"count":12},{"vendor":"Digital Tax Solutions","total":560.0,"count":1},{"vendor":"BP Gas","total":535.32,"count":29},{"vendor":"Kwik Trip","total":504.77,"count":24},{"vendor":"The Bike Lane","total":467.08,"count":3},{"vendor":"North Ave Animal Hospital","total":465.0,"count":2},{"vendor":"Longstreet Parking","total":461.32,"count":2},{"vendor":"Best Buy 00008144","total":417.84,"count":2},{"vendor":"Figma","total":416.25,"count":6},{"vendor":"Google Workspace","total":415.89,"count":8},{"vendor":"Apple Subscriptions","total":399.74,"count":26},{"vendor":"KiwiCo","total":392.52,"count":1},{"vendor":"Wons Auto Werks","total":390.59,"count":3},{"vendor":"Colectivo Coffee","total":380.58,"count":46},{"vendor":"Illinois Tollway","total":380.0,"count":19},{"vendor":"Thomson Memory","total":371.0,"count":1},{"vendor":"StoryStudio Chicago","total":350.0,"count":1},{"vendor":"La Boulangerie","total":342.62,"count":12}];
+const REC = [{"item":"Local Restaurant (Toast)","count":125,"total":3106.49,"avg":24.85},{"item":"Local Vendor (Square)","count":122,"total":2694.72,"avg":22.09},{"item":"Amazon","count":47,"total":2449.29,"avg":52.11},{"item":"Colectivo Coffee","count":46,"total":380.58,"avg":8.27},{"item":"Pharmacy","count":33,"total":1072.81,"avg":32.51},{"item":"Target","count":33,"total":6134.99,"avg":185.91},{"item":"Grubhub","count":31,"total":2024.41,"avg":65.3},{"item":"BP Gas","count":29,"total":535.32,"avg":18.46},{"item":"Fresh Market Place","count":29,"total":2508.31,"avg":86.49},{"item":"Starbucks","count":29,"total":1991.21,"avg":68.66},{"item":"Apple Subscriptions","count":26,"total":399.74,"avg":15.37},{"item":"Kwik Trip","count":24,"total":504.77,"avg":21.03},{"item":"Chicago CBT Center (Therapy)","count":22,"total":4378.0,"avg":199.0},{"item":"Jimmy John's","count":21,"total":307.18,"avg":14.63},{"item":"Illinois Tollway","count":19,"total":380.0,"avg":20.0},{"item":"McDonald's","count":19,"total":260.45,"avg":13.71},{"item":"Culver's","count":17,"total":310.78,"avg":18.28},{"item":"Home Depot","count":14,"total":833.21,"avg":59.52},{"item":"SpotHero","count":14,"total":192.98,"avg":13.78},{"item":"Max (HBO)","count":12,"total":226.42,"avg":18.87}];
+const MONTHLY = {"months":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"cap1":[2045.53,1804.91,2132.58,1809.96,1977.32,3340.26,3158.4,2913.2,1898.8,2953.11,2166.11,3914.1],"citiaa":[1576.52,3559.63,2617.6,3181.05,3693.16,2308.48,3494.31,3216.43,2727.04,3706.54,3055.15,1458.04],"citidc":[1175.93,626.04,742.14,1069.76,736.27,429.84,672.39,409.86,994.02,785.91,614.34,328.94]};
+const TOTAL = 73293.67;
+
+// ── PALETTE ──────────────────────────────────────────────────────────────────
+const PALETTE = [
+  '#6c8fff','#ff8c6b','#5dd6a8','#ffcc55','#c77dff',
+  '#36cfcf','#ff6b9d','#a8d8a8','#ffb347','#87ceeb',
+  '#dda0dd','#98fb98','#f0e68c','#ff7f7f','#b0c4de',
+  '#ffa07a','#20b2aa','#9370db','#f4a460','#7fffd4',
+];
+
+const chartDefaults = {
+  color: '#e8eaf6',
+  borderColor: '#2e3350',
+};
+Chart.defaults.color = '#8892b0';
+Chart.defaults.borderColor = '#2e3350';
+
+// ── MONTHLY CHART ─────────────────────────────────────────────────────────────
+new Chart(document.getElementById('monthlyChart'), {
+  type: 'bar',
+  data: {
+    labels: MONTHLY.months,
+    datasets: [
+      { label: 'Capital One VentureOne', data: MONTHLY.cap1, backgroundColor: 'rgba(108,143,255,0.75)', borderRadius: 4 },
+      { label: 'Citi AA AAdvantage', data: MONTHLY.citiaa, backgroundColor: 'rgba(255,140,107,0.75)', borderRadius: 4 },
+      { label: 'Citi DoubleCash', data: MONTHLY.citidc, backgroundColor: 'rgba(93,214,168,0.75)', borderRadius: 4 },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#8892b0', boxWidth: 14, padding: 16 } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: $${ctx.raw.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}` } }
+    },
+    scales: {
+      x: { stacked: true, ticks: { color: '#8892b0' }, grid: { color: '#2e3350' } },
+      y: { stacked: true, ticks: { color: '#8892b0', callback: v => '$' + (v/1000).toFixed(0) + 'k' }, grid: { color: '#2e3350' } }
+    }
+  }
+});
+
+// ── PIE CHART (top 10 categories) ────────────────────────────────────────────
+const top10 = CATS.slice(0,10);
+const rest = CATS.slice(10).reduce((a,c) => a + c.total, 0);
+const pieLabels = [...top10.map(c=>c.cat), 'All Others'];
+const pieData = [...top10.map(c=>c.total), rest];
+new Chart(document.getElementById('pieChart'), {
+  type: 'doughnut',
+  data: { labels: pieLabels, datasets: [{ data: pieData, backgroundColor: PALETTE.slice(0,11), borderWidth: 1, borderColor: '#1a1d27', hoverOffset: 6 }] },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { color: '#8892b0', boxWidth: 12, padding: 8, font: { size: 11 } } },
+      tooltip: { callbacks: { label: ctx => ` $${ctx.raw.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} (${(ctx.raw/TOTAL*100).toFixed(1)}%)` } }
+    }
+  }
+});
+
+// ── CATEGORY BAR CHART ────────────────────────────────────────────────────────
+new Chart(document.getElementById('catBarChart'), {
+  type: 'bar',
+  data: {
+    labels: CATS.map(c => c.cat.length > 20 ? c.cat.slice(0,20)+'…' : c.cat),
+    datasets: [{ data: CATS.map(c=>c.total), backgroundColor: PALETTE, borderRadius: 4, label: 'Spent' }]
+  },
+  options: {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` $${ctx.raw.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}` } } },
+    scales: {
+      x: { ticks: { color: '#8892b0', callback: v => '$' + (v/1000).toFixed(0)+'k' }, grid: { color: '#2e3350' } },
+      y: { ticks: { color: '#8892b0', font: { size: 11 } }, grid: { display: false } }
+    }
+  }
+});
+
+// ── VENDOR BAR CHART (top 20) ─────────────────────────────────────────────────
+const top20v = VEND.slice(0,20);
+new Chart(document.getElementById('vendBarChart'), {
+  type: 'bar',
+  data: {
+    labels: top20v.map(v => v.vendor.length > 25 ? v.vendor.slice(0,25)+'…' : v.vendor),
+    datasets: [{ data: top20v.map(v=>v.total), backgroundColor: PALETTE, borderRadius: 4, label: 'Spent' }]
+  },
+  options: {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` $${ctx.raw.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}` } } },
+    scales: {
+      x: { ticks: { color: '#8892b0', callback: v => '$' + (v/1000).toFixed(0)+'k' }, grid: { color: '#2e3350' } },
+      y: { ticks: { color: '#8892b0', font: { size: 11 } }, grid: { display: false } }
+    }
+  }
+});
+
+// ── RECURRING BAR CHART ───────────────────────────────────────────────────────
+new Chart(document.getElementById('recBarChart'), {
+  type: 'bar',
+  data: {
+    labels: REC.map(r => r.item.length > 25 ? r.item.slice(0,25)+'…' : r.item),
+    datasets: [{ data: REC.map(r=>r.count), backgroundColor: PALETTE, borderRadius: 4, label: 'Times Purchased' }]
+  },
+  options: {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw} times` } } },
+    scales: {
+      x: { ticks: { color: '#8892b0' }, grid: { color: '#2e3350' } },
+      y: { ticks: { color: '#8892b0', font: { size: 11 } }, grid: { display: false } }
+    }
+  }
+});
+
+// ── TABLE BUILDER ─────────────────────────────────────────────────────────────
+const fmt = n => '$' + parseFloat(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function buildCatTable() {
+  const maxTotal = Math.max(...CATS.map(c=>c.total));
+  let html = '';
+  CATS.forEach((c,i) => {
+    const pct = (c.total/TOTAL*100).toFixed(1);
+    const barW = Math.round(c.total/maxTotal*100);
+    const color = PALETTE[i % PALETTE.length];
+    html += `<tr>
+      <td class="rank">${i+1}</td>
+      <td>${c.cat}</td>
+      <td class="money">${fmt(c.total)}</td>
+      <td><span class="pill">${c.count}</span></td>
+      <td style="color:var(--muted);font-size:12px">${pct}%</td>
+      <td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar" style="width:${barW}%;background:${color}"></div></div></div></td>
+    </tr>`;
+  });
+  document.getElementById('catTbody').innerHTML = html;
+}
+
+function buildVendTable() {
+  const maxTotal = Math.max(...VEND.map(v=>v.total));
+  let html = '';
+  VEND.forEach((v,i) => {
+    const barW = Math.round(v.total/maxTotal*100);
+    const color = PALETTE[i % PALETTE.length];
+    html += `<tr>
+      <td class="rank">${i+1}</td>
+      <td>${v.vendor}</td>
+      <td class="money">${fmt(v.total)}</td>
+      <td><span class="pill">${v.count}</span></td>
+      <td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar" style="width:${barW}%;background:${color}"></div></div></div></td>
+    </tr>`;
+  });
+  document.getElementById('vendTbody').innerHTML = html;
+}
+
+function buildRecTable() {
+  const maxCount = Math.max(...REC.map(r=>r.count));
+  let html = '';
+  REC.forEach((r,i) => {
+    const barW = Math.round(r.count/maxCount*100);
+    const color = PALETTE[i % PALETTE.length];
+    html += `<tr>
+      <td class="rank">${i+1}</td>
+      <td>${r.item}</td>
+      <td><span class="pill pill-orange">${r.count}×</span></td>
+      <td class="money">${fmt(r.total)}</td>
+      <td style="color:var(--muted)">${fmt(r.avg)}</td>
+      <td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar" style="width:${barW}%;background:${color}"></div></div></div></td>
+    </tr>`;
+  });
+  document.getElementById('recTbody').innerHTML = html;
+}
+
+buildCatTable();
+buildVendTable();
+buildRecTable();
+
+// ── TABLE SORT ────────────────────────────────────────────────────────────────
+function sortTable(tableId, colIdx) {
+  const tbl = document.getElementById(tableId);
+  const ths = tbl.querySelectorAll('thead th');
+  const tbody = tbl.querySelector('tbody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  const currentSort = ths[colIdx].dataset.currentSort || 'desc';
+  const nextSort = currentSort === 'desc' ? 'asc' : 'desc';
+
+  ths.forEach((th,i) => {
+    th.classList.remove('sorted');
+    const arrow = th.querySelector('.sort-arrow');
+    if (arrow) arrow.textContent = '↕';
+  });
+  ths[colIdx].classList.add('sorted');
+  const arrow = ths[colIdx].querySelector('.sort-arrow');
+  if (arrow) arrow.textContent = nextSort === 'asc' ? '▲' : '▼';
+  ths[colIdx].dataset.currentSort = nextSort;
+
+  rows.sort((a,b) => {
+    let aVal = a.cells[colIdx].textContent.trim();
+    let bVal = b.cells[colIdx].textContent.trim();
+    const typ = ths[colIdx].dataset.sort;
+    if (typ === 'money' || typ === 'num') {
+      aVal = parseFloat(aVal.replace(/[$,×]/g,'')) || 0;
+      bVal = parseFloat(bVal.replace(/[$,×]/g,'')) || 0;
+    }
+    if (aVal < bVal) return nextSort === 'asc' ? -1 : 1;
+    if (aVal > bVal) return nextSort === 'asc' ? 1 : -1;
+    return 0;
+  });
+  rows.forEach(r => tbody.appendChild(r));
+}
+</script>
+</body>
+</html>
